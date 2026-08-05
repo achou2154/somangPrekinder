@@ -253,6 +253,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   <button class="tbtn" onclick="switchTab('settlement')">📑 수지결산</button>
   <button class="tbtn" onclick="switchTab('claim')">💰 재정청구</button>
   <button class="tbtn" onclick="switchTab('settings')">⚙ 설정</button>
+  <button class="tbtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="최상단으로 이동" style="font-size:15px;padding:10px 14px;">▲</button>
 </nav>
 
 <main>
@@ -1269,6 +1270,22 @@ function setBF(id, field, val) {
   var r = s.budgets.find(function(b){return b.id===id;});
   if (!r) return;
   r[field] = (field==='type'||field==='account'||field==='item') ? val : (Number(val)||0);
+
+  // 해당 행의 D-B, D-C 셀 즉시 재계산
+  var row = document.querySelector('tr[data-id="'+id+'"]');
+  if (row) {
+    var cells = row.querySelectorAll('td');
+    // 8번째(인덱스7): 전년대비(D-B), 9번째(인덱스8): 금액대비(D-C)
+    var d = Number(r.amtD||0), b = Number(r.amtB||0), c = Number(r.amtC||0);
+    if (cells[7]) {
+      cells[7].textContent = fmt(d-b);
+      cells[7].style.color = (d-b<0)?'var(--red)':'var(--green)';
+    }
+    if (cells[8]) {
+      cells[8].textContent = fmt(d-c);
+      cells[8].style.color = (d-c<0)?'var(--red)':'var(--green)';
+    }
+  }
   renderBudgetFooter();
 }
 function delBudgetRow(id) {
@@ -1815,7 +1832,7 @@ function buildResolutionHtml(e) {
       +'<div style="text-align:center;"><img src="'+imgSrc+'" style="max-width:100%;max-height:190mm;object-fit:contain;display:block;margin:auto;"></div>';
   } else {
     // 영수증 없음: A4에서 최대 크기
-    receiptBoxStyle = 'border:2px dashed #aaa;padding:8px;height:200mm;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    receiptBoxStyle = 'border:2px dashed #aaa;padding:8px;height:230mm;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;';
     receiptContent  = '<p style="font-size:9pt;color:#888;margin-bottom:8px;">▼ 영수증 붙이는 곳 (A4)</p>'
       +'<p style="font-size:8pt;color:#ccc;">※ 인쇄 후 영수증 원본을 이 칸에 첨부해 주세요.</p>';
   }
