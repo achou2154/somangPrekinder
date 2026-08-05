@@ -455,27 +455,42 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <th style="width:50px;" class="ctr">삭제</th>
           </tr>
         </thead>
-        <tbody id="budgetBody"></tbody>
-        <tfoot>
-          <tr style="font-weight:700;background:var(--paper);">
-            <td colspan="3" style="font-weight:700;">수입 합계(1)</td>
-            <td class="num" id="ftIncA">0</td><td class="num" id="ftIncB">0</td>
-            <td class="num" id="ftIncC">0</td><td class="num" id="ftIncD">0</td>
-            <td class="num" id="ftIncDB">0</td><td class="num" id="ftIncDC">0</td><td></td>
+        <tbody id="budgetBodyIncome"></tbody>
+        <tbody>
+          <tr style="font-weight:700;background:#e6f4ec;">
+            <td colspan="3" style="font-weight:700;color:var(--green);">수입 합계(1)</td>
+            <td class="num" id="ftIncA" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncB" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncC" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncD" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncDB">0</td>
+            <td class="num" id="ftIncDC">0</td>
+            <td></td>
           </tr>
-          <tr style="font-weight:700;background:var(--paper);">
-            <td colspan="3" style="font-weight:700;">지출 합계(2)</td>
-            <td class="num" id="ftExpA">0</td><td class="num" id="ftExpB">0</td>
-            <td class="num" id="ftExpC">0</td><td class="num" id="ftExpD">0</td>
-            <td class="num" id="ftExpDB">0</td><td class="num" id="ftExpDC">0</td><td></td>
+        </tbody>
+        <tbody id="budgetBodyExpense"></tbody>
+        <tbody>
+          <tr style="font-weight:700;background:#fde8e6;">
+            <td colspan="3" style="font-weight:700;color:var(--red);">지출 합계(2)</td>
+            <td class="num" id="ftExpA" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpB" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpC" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpD" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpDB">0</td>
+            <td class="num" id="ftExpDC">0</td>
+            <td></td>
           </tr>
           <tr style="font-weight:700;background:var(--gold-lt);">
             <td colspan="3" style="font-weight:700;">잔액(1-2)</td>
-            <td class="num" id="ftRemA">0</td><td class="num" id="ftRemB">0</td>
-            <td class="num" id="ftRemC">0</td><td class="num" id="ftRemD">0</td>
-            <td class="num" id="ftRemDB">0</td><td class="num" id="ftRemDC">0</td><td></td>
+            <td class="num" id="ftRemA">0</td>
+            <td class="num" id="ftRemB">0</td>
+            <td class="num" id="ftRemC">0</td>
+            <td class="num" id="ftRemD">0</td>
+            <td class="num" id="ftRemDB">0</td>
+            <td class="num" id="ftRemDC">0</td>
+            <td></td>
           </tr>
-        </tfoot>
+        </tbody>
       </table>
     </div>
   </div>
@@ -1630,9 +1645,17 @@ function syncAllAccountSelects(type) {
 function renderBudgetTable() {
   var s = curState();
   var rows = s.budgets||[];
-  var tbody = document.getElementById('budgetBody');
-  if (!rows.length) { tbody.innerHTML='<tr class="empty-cell"><td colspan="10">항목을 추가하세요.</td></tr>'; renderBudgetFooter(); return; }
-  tbody.innerHTML = rows.map(function(b){
+  var tbodyInc = document.getElementById('budgetBodyIncome');
+  var tbodyExp = document.getElementById('budgetBodyExpense');
+
+  if (!rows.length) {
+    tbodyInc.innerHTML='<tr class="empty-cell"><td colspan="10">항목을 추가하세요.</td></tr>';
+    tbodyExp.innerHTML='';
+    renderBudgetFooter();
+    return;
+  }
+
+  function makeRow(b) {
     var tag = b.type==='income'?'<span class="tag tin">수입</span>':'<span class="tag twarn">지출</span>';
     return '<tr data-id="'+b.id+'">'
       +'<td class="ctr">'+tag+'</td>'
@@ -1646,7 +1669,14 @@ function renderBudgetTable() {
       +'<td class="num" style="color:'+(Number(b.amtD||0)-Number(b.amtC||0)<0?'var(--red)':'var(--green)')+';">'+fmt(Number(b.amtD||0)-Number(b.amtC||0))+'</td>'
       +'<td class="ctr"><button onclick="delBudgetRow('+b.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;"><i class="fa-solid fa-trash-can"></i></button></td>'
       +'</tr>';
-  }).join('');
+  }
+
+  var incRows = rows.filter(function(b){return b.type==='income';});
+  var expRows = rows.filter(function(b){return b.type==='expense';});
+
+  tbodyInc.innerHTML = incRows.length ? incRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="10">수입 항목을 추가하세요.</td></tr>';
+  tbodyExp.innerHTML = expRows.length ? expRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="10">지출 항목을 추가하세요.</td></tr>';
+
   renderBudgetFooter();
 }
 function renderBudgetFooter() {
