@@ -618,6 +618,36 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
       </div>
     </div>
 
+    <!-- 계정 관리 -->
+    <div class="set-section card card-body">
+      <h3 style="margin-bottom:14px;font-size:14px;font-weight:700;color:var(--ink-mid);padding-bottom:8px;border-bottom:1px solid var(--rule);">계정 관리</h3>
+      <p style="font-size:12px;color:var(--ink-soft);margin-bottom:14px;">수입·지출 등록 시 사용할 계정 목록을 관리합니다. 예산계획서에 등록된 계정도 자동으로 포함됩니다.</p>
+
+      <!-- 수입 계정 -->
+      <div style="margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label style="font-size:13px;font-weight:700;color:var(--green);">➕ 수입 계정</label>
+        </div>
+        <div id="incAccountList" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="newIncAccount" placeholder="새 수입 계정명 입력" style="flex:1;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
+          <button class="btn btn-green btn-sm" onclick="addAccountFromSettings('income')"><i class="fa-solid fa-plus"></i> 추가</button>
+        </div>
+      </div>
+
+      <!-- 지출 계정 -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <label style="font-size:13px;font-weight:700;color:var(--red);">➖ 지출 계정</label>
+        </div>
+        <div id="expAccountList" style="margin-bottom:8px;"></div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="newExpAccount" placeholder="새 지출 계정명 입력" style="flex:1;padding:7px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;">
+          <button class="btn btn-primary btn-sm" onclick="addAccountFromSettings('expense')"><i class="fa-solid fa-plus"></i> 추가</button>
+        </div>
+      </div>
+    </div>
+
     <div class="set-section card card-body">
       <h3 style="margin-bottom:10px;font-size:14px;font-weight:700;color:var(--ink-mid);padding-bottom:8px;border-bottom:1px solid var(--rule);">로컬 초기화</h3>
       <button class="btn btn-danger btn-sm" onclick="clearLocal()"><i class="fa-solid fa-trash"></i> 로컬 설정 초기화</button>
@@ -745,6 +775,7 @@ function switchTab(id) {
   document.getElementById('tab-'+id).classList.add('active');
   event.currentTarget.classList.add('active');
   renderAll();
+  if (id === 'settings') renderAccountSettings();
 }
 
 // ═══════════════════════════════════════
@@ -919,7 +950,81 @@ function clearLocal() {
   localStorage.clear(); toast('초기화 완료'); setTimeout(function(){location.reload();},1000);
 }
 
-// ═══════════════════════════════════════
+// ── 설정 탭 계정 관리 ──
+function renderAccountSettings() {
+  renderAccountList('income');
+  renderAccountList('expense');
+}
+
+function renderAccountList(type) {
+  var listId = type === 'income' ? 'incAccountList' : 'expAccountList';
+  var el = document.getElementById(listId);
+  if (!el) return;
+
+  var s = curState();
+  var budgetOnly = (s.budgets||[])
+    .filter(function(b){ return b.type===type && b.account; })
+    .map(function(b){ return b.account; })
+    .filter(function(a,i,arr){ return arr.indexOf(a)===i; });
+  var customAccounts = getCustomAccounts(type);
+
+  var html = '';
+  budgetOnly.forEach(function(acc) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--paper);border-radius:5px;margin-bottom:5px;">'
+      +'<span style="flex:1;font-size:13px;">'+esc(acc)+'</span>'
+      +'<span style="font-size:10px;color:var(--ink-soft);background:var(--paper2);padding:2px 7px;border-radius:10px;">예산연동</span>'
+      +'</div>';
+  });
+  customAccounts.forEach(function(acc, i) {
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--paper);border-radius:5px;margin-bottom:5px;">'
+      +'<input type="text" value="'+esc(acc)+'" id="accInput_'+type+'_'+i+'" style="flex:1;border:1px solid var(--rule);border-radius:4px;padding:4px 8px;font-size:13px;font-family:\'Noto Sans KR\',sans-serif;">'
+      +'<button class="btn btn-ghost btn-sm" onclick="saveAccountEdit(\''+type+'\','+i+')"><i class="fa-solid fa-check"></i></button>'
+      +'<button class="btn btn-danger btn-sm" onclick="deleteAccount(\''+type+'\','+i+')"><i class="fa-solid fa-trash"></i></button>'
+      +'</div>';
+  });
+  if (!budgetOnly.length && !customAccounts.length) {
+    html = '<p style="font-size:12px;color:var(--ink-soft);padding:8px 0;">등록된 계정이 없습니다.</p>';
+  }
+  el.innerHTML = html;
+}
+
+function addAccountFromSettings(type) {
+  var inputId = type === 'income' ? 'newIncAccount' : 'newExpAccount';
+  var name = document.getElementById(inputId).value.trim();
+  if (!name) return alert('계정명을 입력해 주세요.');
+  var existing = type === 'income' ? getIncomeAccounts() : getExpenseAccounts();
+  if (existing.includes(name)) return alert('이미 존재하는 계정명입니다.');
+  addCustomAccount(type, name);
+  document.getElementById(inputId).value = '';
+  renderAccountSettings();
+  syncExpenseSelect();
+  toast('✅ "'+name+'" 계정이 추가되었습니다.');
+}
+
+function saveAccountEdit(type, idx) {
+  var input = document.getElementById('accInput_'+type+'_'+idx);
+  if (!input) return;
+  var newName = input.value.trim();
+  if (!newName) return alert('계정명을 입력해 주세요.');
+  var arr = getCustomAccounts(type);
+  var oldName = arr[idx];
+  arr[idx] = newName;
+  localStorage.setItem('cf_acc_'+type+'_'+currentYear, JSON.stringify(arr));
+  renderAccountSettings();
+  syncExpenseSelect();
+  toast('✅ "'+oldName+'" → "'+newName+'" 수정 완료');
+}
+
+function deleteAccount(type, idx) {
+  var arr = getCustomAccounts(type);
+  var name = arr[idx];
+  if (!confirm('"'+name+'" 계정을 삭제하시겠습니까?\n기존 등록된 내역의 계정명은 변경되지 않습니다.')) return;
+  arr.splice(idx, 1);
+  localStorage.setItem('cf_acc_'+type+'_'+currentYear, JSON.stringify(arr));
+  renderAccountSettings();
+  syncExpenseSelect();
+  toast('삭제 완료');
+}
 // 수입 등록
 // ═══════════════════════════════════════
 async function submitIncome() {
