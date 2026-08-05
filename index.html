@@ -1366,20 +1366,22 @@ function syncExpenseSelect() {
 }
 // ── 키워드 → 계정 자동 매핑 ──
 var KEYWORD_MAP_EXPENSE = [
-  { keywords: ['공과교재','교재'], account: '공과교재' },
-  { keywords: ['교사'], account: '교사교육' },
-  { keywords: ['성경학교'], account: '성경학교' },
-  { keywords: ['전도축제','소망놀이터'], account: '전도축제' },
+  { keywords: ['교재','공과'],                    account: '교재' },
+  { keywords: ['교사','월례회'],                  account: '교육' },
+  { keywords: ['성경학교'],                       account: '성경학교' },
+  { keywords: ['전도축제','소망놀이터'],           account: '전도축제' },
   { keywords: ['부활절','추수감사절','성탄절','절기'], account: '절기행사' },
-  { keywords: ['선물','프린터','비닐','건전지','앞치마','물품'], account: '물품' },
-  { keywords: ['주일간식','간식'], account: '주일간식' },
+  { keywords: ['선물','건전지','앞치마','물품','비닐'], account: '물품(선물 등)' },
+  { keywords: ['주일간식'],                       account: '간식' },
+  { keywords: ['비품'],                           account: '비품' },
+  { keywords: ['기타'],                           account: '기타' },
 ];
 var KEYWORD_MAP_INCOME = [
-  { keywords: ['이월금'], account: '전년도에서이월금' },
-  { keywords: ['재정','예산'], account: '재정팀 지원금액' },
-  { keywords: ['이자'], account: '예금이자' },
-  { keywords: ['회비','후원금','찬조'], account: '회비 및 후원금등' },
-  { keywords: ['환불'], account: '환불금' },
+  { keywords: ['이월금'],             account: '이월금' },
+  { keywords: ['재정'],               account: '재정' },
+  { keywords: ['이자'],               account: '이자' },
+  { keywords: ['회비','후원금','찬조'], account: '회비+후원금' },
+  { keywords: ['환불'],               account: '환불' },
 ];
 
 function autoSelectAccount(type, text) {
