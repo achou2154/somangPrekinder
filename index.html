@@ -197,11 +197,11 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
     </div>
     <input type="hidden" id="editId">
     <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="editDate"></div>
-    <div class="field"><label>계정 <span class="req">*</span></label>
+    <div class="field"><label>항/목(계정) <span class="req">*</span></label>
       <div id="editAccountWrap"><select id="editAccount"></select></div>
     </div>
     <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="editAmount"></div>
-    <div class="field"><label>적요 <span class="req">*</span></label><input type="text" id="editSummary"></div>
+    <div class="field"><label>상세내역 <span class="req">*</span></label><input type="text" id="editSummary"></div>
     <div class="field"><label>비고</label><input type="text" id="editNote"></div>
     <div class="field">
       <label>영수증 교체 <span style="font-size:10px;color:#888;">(선택 — 기존 유지 시 비워두세요)</span></label>
@@ -212,6 +212,34 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <i class="fa-solid fa-floppy-disk"></i> 저장
       </button>
       <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeEditModal()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- 수입 수정 모달 -->
+<div id="editIncomeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:10px;padding:24px;width:92%;max-width:460px;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="font-size:15px;font-weight:700;">✏️ 수입 내역 수정</h3>
+      <button onclick="closeEditIncomeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink-soft);">✕</button>
+    </div>
+    <input type="hidden" id="editIncomeId">
+    <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="editIncomeDate"></div>
+    <div class="field"><label>항/목(계정) <span class="req">*</span></label>
+      <div id="editIncomeAccountWrap"><select id="editIncomeAccount"></select></div>
+    </div>
+    <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="editIncomeAmount"></div>
+    <div class="field"><label>상세내역 <span class="req">*</span></label><input type="text" id="editIncomeSummary"></div>
+    <div class="field"><label>비고</label><input type="text" id="editIncomeNote"></div>
+    <div class="field">
+      <label>영수증 교체 <span style="font-size:10px;color:#888;">(선택 — 기존 유지 시 비워두세요)</span></label>
+      <input type="file" id="editIncomeReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-green" style="flex:1;justify-content:center;" onclick="saveEditIncome()">
+        <i class="fa-solid fa-floppy-disk"></i> 저장
+      </button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeEditIncomeModal()">취소</button>
     </div>
   </div>
 </div>
@@ -302,7 +330,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
       </div>
       <div style="overflow-x:auto;">
         <table class="tbl">
-          <thead><tr><th>날짜</th><th>계정</th><th class="num">금액</th><th>적요</th><th>비고</th><th class="ctr">증빙</th><th class="ctr">삭제</th></tr></thead>
+          <thead><tr><th>날짜</th><th>계정</th><th class="num">금액</th><th>적요</th><th>비고</th><th class="ctr">증빙</th><th class="ctr">수정</th><th class="ctr">삭제</th></tr></thead>
           <tbody id="incomeBody"></tbody>
         </table>
       </div>
@@ -1273,9 +1301,63 @@ async function saveEditExpense() {
   }
 }
 
-// ═══════════════════════════════════════
-// 예산 행 추가 / 저장
-// ═══════════════════════════════════════
+// ── 수입 수정 모달 ──
+function openEditIncomeModal(id) {
+  var s = curState();
+  var e = (s.incomes||[]).find(function(r){return r.id===id;});
+  if (!e) return;
+
+  // 계정 select
+  var wrap = document.getElementById('editIncomeAccountWrap');
+  if (wrap) wrap.innerHTML = buildAccountSelect('editIncomeAccount', 'income', e.account, null);
+
+  document.getElementById('editIncomeId').value      = e.id;
+  document.getElementById('editIncomeDate').value    = e.date;
+  document.getElementById('editIncomeAmount').value  = e.amount;
+  document.getElementById('editIncomeSummary').value = e.summary;
+  document.getElementById('editIncomeNote').value    = e.note || '';
+  document.getElementById('editIncomeReceipt').value = '';
+
+  document.getElementById('editIncomeModal').style.display = 'flex';
+}
+
+function closeEditIncomeModal() {
+  document.getElementById('editIncomeModal').style.display = 'none';
+}
+
+async function saveEditIncome() {
+  var id      = Number(document.getElementById('editIncomeId').value);
+  var date    = document.getElementById('editIncomeDate').value;
+  var account = document.getElementById('editIncomeAccount').value;
+  var amount  = Number(document.getElementById('editIncomeAmount').value)||0;
+  var summary = document.getElementById('editIncomeSummary').value.trim();
+  var note    = document.getElementById('editIncomeNote').value.trim();
+  var file    = document.getElementById('editIncomeReceipt').files[0];
+
+  if (!date||!account||amount<=0||!summary) return alert('일자, 항/목(계정), 금액, 상세내역은 필수입니다.');
+
+  var payload = {action:'editIncome', year:currentYear, id:id, date:date, account:account, amount:amount, summary:summary, note:note};
+  if (file) {
+    payload.receiptFile = await fileToBase64(file);
+    payload.receiptName = file.name;
+    payload.receiptType = file.type;
+  }
+
+  var res = await postToServer(payload, '수입 수정 저장 중...');
+  if (res) {
+    var s = curState();
+    var idx = (s.incomes||[]).findIndex(function(r){return r.id===id;});
+    if (idx > -1) {
+      s.incomes[idx] = Object.assign(s.incomes[idx], {
+        date:date, account:account, amount:amount, summary:summary, note:note,
+        receiptUrl: res.receiptUrl || s.incomes[idx].receiptUrl
+      });
+    }
+    closeEditIncomeModal();
+    renderAll();
+    toast('✅ 수입 수정 완료');
+  }
+}
 function addBudgetRow(type) {
   var s = curState();
   s.budgets.push({id:Date.now(), type:type, account:'', item:'', amtA:0, amtB:0, amtC:0, amtD:0});
@@ -1368,7 +1450,9 @@ function renderIncomeTable() {
   if (!rows.length) { tbody.innerHTML='<tr class="empty-cell"><td colspan="7">등록된 수입 내역이 없습니다.</td></tr>'; return; }
   tbody.innerHTML = rows.map(function(r){
     var link = r.receiptUrl ? '<a href="'+r.receiptUrl+'" target="_blank" style="color:var(--blue);font-size:12px;">보기</a>' : '-';
-    return '<tr><td style="white-space:nowrap;color:var(--ink-soft);">'+esc(r.date)+'</td><td>'+esc(r.account)+'</td><td class="num" style="color:var(--green);font-weight:700;">'+fmt(r.amount)+'원</td><td>'+esc(r.summary)+'</td><td>'+esc(r.note||'')+'</td><td class="ctr">'+link+'</td><td class="ctr"><button onclick="deleteIncome('+r.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td></tr>';
+    return '<tr><td style="white-space:nowrap;color:var(--ink-soft);">'+esc(r.date)+'</td><td>'+esc(r.account)+'</td><td class="num" style="color:var(--green);font-weight:700;">'+fmt(r.amount)+'원</td><td>'+esc(r.summary)+'</td><td>'+esc(r.note||'')+'</td><td class="ctr">'+link+'</td>'
+      +'<td class="ctr"><button onclick="openEditIncomeModal('+r.id+')" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:14px;"><i class="fa-solid fa-pen-to-square"></i></button></td>'
+      +'<td class="ctr"><button onclick="deleteIncome('+r.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;"><i class="fa-solid fa-trash"></i></button></td></tr>';
   }).join('');
 }
 
