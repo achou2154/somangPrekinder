@@ -310,7 +310,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="inAccountWrap"></div>
         </div>
-        <div class="field"><label>목(적요) <span style="font-size:10px;color:#888;">(선택)</span></label>
+        <div class="field"><label>목(적요) <span class="req">*</span></label>
           <select id="inItem" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;" onchange="syncIncomeItem()">
             <option value="">선택</option>
           </select>
@@ -363,7 +363,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
           <div id="expAccountWrap"></div>
           <div class="hint" id="expHint"></div>
         </div>
-        <div class="field"><label>목(적요) <span style="font-size:10px;color:#888;">(선택)</span></label>
+        <div class="field"><label>목(적요) <span class="req">*</span></label>
           <select id="expItem" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;" onchange="syncExpenseItem()">
             <option value="">선택</option>
           </select>
@@ -1123,7 +1123,7 @@ async function submitIncome() {
   var amount  = Number(document.getElementById('inAmount').value)||0;
   var note    = document.getElementById('inNote').value.trim();
   var file    = document.getElementById('inReceipt').files[0];
-  if (!date||!summary||!account||amount<=0) return alert('일자, 상세내역, 항/목(계정), 금액은 필수입니다.');
+  if (!date||!summary||!account||amount<=0||!item) return alert('일자, 상세내역, 항/목(계정), 금액, 목(적요)은 필수입니다.');
   showLoading(true,'수입 등록 중...');
   var payload = {action:'addIncome', year:currentYear, id:Date.now(), date:date, summary:summary, account:account, item:item, amount:amount, note:note};
   if (file) {
@@ -1155,7 +1155,7 @@ async function submitExpense() {
   var summary = document.getElementById('expSummary').value.trim();
   var note    = document.getElementById('expNote').value.trim();
   var file    = document.getElementById('expReceipt').files[0];
-  if (!date||!account||amount<=0||!summary) return alert('일자, 항/목(계정), 금액, 상세내역은 필수입니다.');
+  if (!date||!account||amount<=0||!summary||!item) return alert('일자, 항/목(계정), 금액, 상세내역은 필수입니다.');
   var payload = {action:'addExpense', year:currentYear, id:Date.now(), date:date, account:account, item:item, amount:amount, summary:summary, note:note};
   if (file) {
     var b64 = await fileToBase64(file);
@@ -1197,10 +1197,15 @@ function updateItemSelect(type, account) {
     .filter(function(b){ return b.type===type && b.account===account && b.item; })
     .map(function(b){ return b.item; })
     .filter(function(v,i,a){ return a.indexOf(v)===i; });
+
   sel.innerHTML = '<option value="">선택</option>';
   items.forEach(function(item){
     sel.innerHTML += '<option value="'+esc(item)+'">'+esc(item)+'</option>';
   });
+  // 항목이 1개뿐이면 자동 선택
+  if (items.length === 1) {
+    sel.value = items[0];
+  }
 }
 
 // 지출 목(적요) 선택 시 처리
