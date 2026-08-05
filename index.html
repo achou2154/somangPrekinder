@@ -266,12 +266,21 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
     <div class="card" style="height:fit-content;">
       <div class="card-head"><h3>➕ 수입 등록</h3></div>
       <div class="card-body">
+        <!-- 총 수입 표시 -->
+        <div style="background:var(--paper);border-radius:6px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;">당해연도 총 수입</span>
+          <span id="inTotalAmt" style="font-size:15px;font-weight:900;color:var(--green);">0원</span>
+        </div>
         <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="inDate"></div>
-        <div class="field"><label>적요 <span class="req">*</span></label><input type="text" id="inSummary" placeholder="수입 내용 상세히"></div>
-        <div class="field"><label>계정 <span class="req">*</span></label>
+        <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="inAmount" placeholder="원 단위"></div>
+        <div class="field">
+          <label>적요 <span class="req">*</span></label>
+          <input type="text" id="inSummary" placeholder="수입 내용 상세히" oninput="autoSelectAccount('income',this.value)">
+          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
+        </div>
+        <div class="field"><label>계정(항/목) <span class="req">*</span></label>
           <div id="inAccountWrap"></div>
         </div>
-        <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="inAmount" placeholder="원 단위"></div>
         <div class="field"><label>영수증 첨부 <span style="font-size:10px;color:#888;">(선택)</span></label>
           <input type="file" id="inReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
         </div>
@@ -304,13 +313,22 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
     <div class="card" style="height:fit-content;">
       <div class="card-head"><h3>➖ 지출 등록</h3></div>
       <div class="card-body">
+        <!-- 총 지출 표시 -->
+        <div style="background:var(--paper);border-radius:6px;padding:8px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:12px;color:var(--ink-soft);font-weight:600;">당해연도 총 지출</span>
+          <span id="expTotalAmt" style="font-size:15px;font-weight:900;color:var(--red);">0원</span>
+        </div>
         <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="expDate"></div>
-        <div class="field"><label>계정 <span class="req">*</span></label>
+        <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="expAmount" placeholder="원 단위"></div>
+        <div class="field">
+          <label>적요 <span class="req">*</span></label>
+          <input type="text" id="expSummary" placeholder="상세 내역" oninput="autoSelectAccount('expense',this.value)">
+          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
+        </div>
+        <div class="field"><label>계정(항/목) <span class="req">*</span></label>
           <div id="expAccountWrap"></div>
           <div class="hint" id="expHint"></div>
         </div>
-        <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="expAmount" placeholder="원 단위"></div>
-        <div class="field"><label>적요 <span class="req">*</span></label><input type="text" id="expSummary" placeholder="상세 내역"></div>
         <div class="field"><label>영수증 <span style="font-size:10px;color:#888;">(선택)</span></label>
           <input type="file" id="expReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
         </div>
@@ -1152,7 +1170,7 @@ function openEditModal(id) {
   } else {
     // 기존 select 방식 폴백
     var sel = document.getElementById('editAccount');
-    sel.innerHTML = '<option value="">계정 선택</option>';
+    sel.innerHTML = '<option value="">선택</option>';
     getExpenseAccounts().forEach(function(acc){
       sel.innerHTML += '<option value="'+esc(acc)+'"'+(e.account===acc?' selected':'')+'>'+esc(acc)+'</option>';
     });
@@ -1278,6 +1296,7 @@ function renderAll() {
   renderSettlementTable();
   renderClaimTable();
   refreshClaimSelects();
+  updateTotals();
 }
 
 // 수입 테이블
@@ -1345,7 +1364,51 @@ function syncExpenseSelect() {
   }
   updateExpHint();
 }
-// ── 계정 관리 (예산 항목 + 사용자 추가 계정 통합) ──
+// ── 키워드 → 계정 자동 매핑 ──
+var KEYWORD_MAP_EXPENSE = [
+  { keywords: ['공과교재','교재'], account: '공과교재' },
+  { keywords: ['교사'], account: '교사교육' },
+  { keywords: ['성경학교'], account: '성경학교' },
+  { keywords: ['전도축제','소망놀이터'], account: '전도축제' },
+  { keywords: ['부활절','추수감사절','성탄절','절기'], account: '절기행사' },
+  { keywords: ['선물','프린터','비닐','건전지','앞치마','물품'], account: '물품' },
+  { keywords: ['주일간식','간식'], account: '주일간식' },
+];
+var KEYWORD_MAP_INCOME = [
+  { keywords: ['이월금'], account: '전년도에서이월금' },
+  { keywords: ['재정','예산'], account: '재정팀 지원금액' },
+  { keywords: ['이자'], account: '예금이자' },
+  { keywords: ['회비','후원금','찬조'], account: '회비 및 후원금등' },
+  { keywords: ['환불'], account: '환불금' },
+];
+
+function autoSelectAccount(type, text) {
+  if (!text) return;
+  var map = type === 'expense' ? KEYWORD_MAP_EXPENSE : KEYWORD_MAP_INCOME;
+  var selId = type === 'expense' ? 'expAccount' : 'inAccount';
+  for (var i = 0; i < map.length; i++) {
+    var matched = map[i].keywords.some(function(kw){ return text.indexOf(kw) >= 0; });
+    if (matched) {
+      var sel = document.getElementById(selId);
+      if (sel && sel.value !== map[i].account) {
+        sel.value = map[i].account;
+        if (type === 'expense') updateExpHint();
+      }
+      return;
+    }
+  }
+}
+
+// ── 총수입/총지출 표시 업데이트 ──
+function updateTotals() {
+  var s = curState();
+  var totalInc = (s.incomes||[]).reduce(function(a,r){return a+Number(r.amount||0);},0);
+  var totalExp = (s.expenses||[]).reduce(function(a,r){return a+Number(r.amount||0);},0);
+  var inEl  = document.getElementById('inTotalAmt');
+  var expEl = document.getElementById('expTotalAmt');
+  if (inEl)  inEl.textContent  = fmt(totalInc)+'원';
+  if (expEl) expEl.textContent = fmt(totalExp)+'원';
+}
 function getCustomAccounts(type) {
   // localStorage에 저장된 추가 계정
   try { return JSON.parse(localStorage.getItem('cf_acc_'+type+'_'+currentYear)||'[]'); }
@@ -1375,7 +1438,7 @@ function getIncomeAccounts() {
 // 계정 select HTML 생성 (직접입력 옵션 포함)
 function buildAccountSelect(id, type, currentVal, onchangeFn) {
   var accounts = type==='income' ? getIncomeAccounts() : getExpenseAccounts();
-  var opts = '<option value="">계정 선택</option>'
+  var opts = '<option value="">선택</option>'
     + accounts.map(function(a){ return '<option value="'+esc(a)+'"'+(a===currentVal?' selected':'')+'>'+esc(a)+'</option>'; }).join('')
     + '<option value="__new__">✏️ 직접 입력...</option>';
   return '<select id="'+id+'" onchange="handleAccountSelect(this,\''+type+'\','+(onchangeFn?'\''+onchangeFn+'\'':'null')+')">'+opts+'</select>';
