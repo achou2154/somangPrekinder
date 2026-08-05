@@ -275,12 +275,17 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="inDate"></div>
         <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="inAmount" placeholder="원 단위"></div>
         <div class="field">
-          <label>적요 <span class="req">*</span></label>
+          <label>상세내역 <span class="req">*</span></label>
           <input type="text" id="inSummary" placeholder="수입 내용 상세히" oninput="autoSelectAccount('income',this.value)">
           <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
         </div>
-        <div class="field"><label>계정(항/목) <span class="req">*</span></label>
+        <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="inAccountWrap"></div>
+        </div>
+        <div class="field"><label>목(적요) <span style="font-size:10px;color:#888;">(선택)</span></label>
+          <select id="inItem" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;" onchange="syncIncomeItem()">
+            <option value="">선택</option>
+          </select>
         </div>
         <div class="field"><label>영수증 첨부 <span style="font-size:10px;color:#888;">(선택)</span></label>
           <input type="file" id="inReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
@@ -322,13 +327,18 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field"><label>일자 <span class="req">*</span></label><input type="date" id="expDate"></div>
         <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="expAmount" placeholder="원 단위"></div>
         <div class="field">
-          <label>적요 <span class="req">*</span></label>
+          <label>상세내역 <span class="req">*</span></label>
           <input type="text" id="expSummary" placeholder="상세 내역" oninput="autoSelectAccount('expense',this.value)">
           <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
         </div>
-        <div class="field"><label>계정(항/목) <span class="req">*</span></label>
+        <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="expAccountWrap"></div>
           <div class="hint" id="expHint"></div>
+        </div>
+        <div class="field"><label>목(적요) <span style="font-size:10px;color:#888;">(선택)</span></label>
+          <select id="expItem" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;" onchange="syncExpenseItem()">
+            <option value="">선택</option>
+          </select>
         </div>
         <div class="field"><label>영수증 <span style="font-size:10px;color:#888;">(선택)</span></label>
           <input type="file" id="expReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
@@ -406,8 +416,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <thead>
           <tr>
             <th style="width:50px;">구분</th>
-            <th style="width:130px;">항 (계정)</th>
-            <th style="width:160px;">목 (적요)</th>
+            <th style="width:130px;">항/목(계정)</th>
+            <th style="width:160px;">적요</th>
             <th class="num" style="width:110px;"><span id="yrPP2"></span>년 금액(A)</th>
             <th class="num" style="width:110px;"><span id="yrP2"></span>년 예산액(B)</th>
             <th class="num" style="width:110px;"><span id="yrP3"></span>년 가결산(C)</th>
@@ -1081,12 +1091,13 @@ async function submitIncome() {
   var date    = document.getElementById('inDate').value;
   var summary = document.getElementById('inSummary').value.trim();
   var account = document.getElementById('inAccount').value;
+  var item    = document.getElementById('inItem') ? document.getElementById('inItem').value : '';
   var amount  = Number(document.getElementById('inAmount').value)||0;
   var note    = document.getElementById('inNote').value.trim();
   var file    = document.getElementById('inReceipt').files[0];
-  if (!date||!summary||!account||amount<=0) return alert('일자, 적요, 계정, 금액은 필수입니다.');
+  if (!date||!summary||!account||amount<=0) return alert('일자, 상세내역, 항/목(계정), 금액은 필수입니다.');
   showLoading(true,'수입 등록 중...');
-  var payload = {action:'addIncome', year:currentYear, id:Date.now(), date:date, summary:summary, account:account, amount:amount, note:note};
+  var payload = {action:'addIncome', year:currentYear, id:Date.now(), date:date, summary:summary, account:account, item:item, amount:amount, note:note};
   if (file) {
     var b64 = await fileToBase64(file);
     payload.receiptFile = b64; payload.receiptName = file.name; payload.receiptType = file.type;
@@ -1094,8 +1105,7 @@ async function submitIncome() {
   showLoading(false);
   var res = await postToServer(payload, '수입 등록 중...');
   if (res) {
-    // 로컬 상태에도 추가
-    curState().incomes.push({id:payload.id, date:date, summary:summary, account:account, amount:amount, note:note, receiptUrl:res.receiptUrl||''});
+    curState().incomes.push({id:payload.id, date:date, summary:summary, account:account, item:item, amount:amount, note:note, receiptUrl:res.receiptUrl||''});
     clearIncomeForm(); renderAll(); toast('✅ 수입이 등록되었습니다.');
   }
 }
@@ -1103,6 +1113,7 @@ function clearIncomeForm() {
   ['inSummary','inAmount','inNote'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('inReceipt').value='';
   document.getElementById('inDate').value = new Date().toISOString().slice(0,10);
+  var inItem = document.getElementById('inItem'); if(inItem) inItem.innerHTML='<option value="">선택</option>';
 }
 
 // ═══════════════════════════════════════
@@ -1111,16 +1122,20 @@ function clearIncomeForm() {
 async function submitExpense() {
   var date    = document.getElementById('expDate').value;
   var account = document.getElementById('expAccount').value;
+  var item    = document.getElementById('expItem') ? document.getElementById('expItem').value : '';
   var amount  = Number(document.getElementById('expAmount').value)||0;
   var summary = document.getElementById('expSummary').value.trim();
   var note    = document.getElementById('expNote').value.trim();
   var file    = document.getElementById('expReceipt').files[0];
-  if (!date||!account||amount<=0||!summary) return alert('일자, 계정, 금액, 적요는 필수입니다.');
-  var b64 = await fileToBase64(file);
-  var payload = {action:'addExpense', year:currentYear, id:Date.now(), date:date, account:account, amount:amount, summary:summary, note:note, receiptFile:b64, receiptName:file.name, receiptType:file.type};
-  var res = await postToServer(payload, '지출 등록 및 영수증 업로드 중...');
+  if (!date||!account||amount<=0||!summary) return alert('일자, 항/목(계정), 금액, 상세내역은 필수입니다.');
+  var payload = {action:'addExpense', year:currentYear, id:Date.now(), date:date, account:account, item:item, amount:amount, summary:summary, note:note};
+  if (file) {
+    var b64 = await fileToBase64(file);
+    payload.receiptFile = b64; payload.receiptName = file.name; payload.receiptType = file.type;
+  }
+  var res = await postToServer(payload, '지출 등록 중...');
   if (res) {
-    curState().expenses.push({id:payload.id, date:date, account:account, amount:amount, summary:summary, note:note, receiptUrl:res.receiptUrl||''});
+    curState().expenses.push({id:payload.id, date:date, account:account, item:item, amount:amount, summary:summary, note:note, receiptUrl:res.receiptUrl||''});
     clearExpenseForm(); renderAll(); toast('✅ 지출이 등록되었습니다.');
   }
 }
@@ -1128,16 +1143,45 @@ function clearExpenseForm() {
   ['expAmount','expSummary','expNote'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('expReceipt').value='';
   document.getElementById('expDate').value = new Date().toISOString().slice(0,10);
+  var expItem = document.getElementById('expItem'); if(expItem) expItem.innerHTML='<option value="">선택</option>';
 }
 function updateExpHint() {
-  var acc  = document.getElementById('expAccount').value;
+  var acc  = document.getElementById('expAccount') ? document.getElementById('expAccount').value : '';
   var hint = document.getElementById('expHint');
-  if (!acc) { hint.textContent=''; return; }
+  if (!acc || !hint) return;
   var s = curState();
   var b = (s.budgets||[]).filter(function(r){return r.type==='expense' && r.account===acc;});
   var totalBudget = b.reduce(function(a,r){return a+Number(r.amtD||0);},0);
   var totalSpent  = (s.expenses||[]).filter(function(e){return e.account===acc;}).reduce(function(a,e){return a+Number(e.amount||0);},0);
   hint.textContent = '예산: '+fmt(totalBudget)+'원 | 집행: '+fmt(totalSpent)+'원 | 잔액: '+fmt(totalBudget-totalSpent)+'원';
+  // 항/목 선택 시 목(적요) 드롭다운 갱신
+  updateItemSelect('expense', acc);
+}
+
+// 항/목 선택 시 목(적요) 드롭다운 갱신
+function updateItemSelect(type, account) {
+  var s = curState();
+  var itemSelId = type === 'expense' ? 'expItem' : 'inItem';
+  var sel = document.getElementById(itemSelId);
+  if (!sel) return;
+  // 예산계획서에서 해당 계정의 목(item) 목록 가져오기
+  var items = (s.budgets||[])
+    .filter(function(b){ return b.type===type && b.account===account && b.item; })
+    .map(function(b){ return b.item; })
+    .filter(function(v,i,a){ return a.indexOf(v)===i; });
+  sel.innerHTML = '<option value="">선택</option>';
+  items.forEach(function(item){
+    sel.innerHTML += '<option value="'+esc(item)+'">'+esc(item)+'</option>';
+  });
+}
+
+// 지출 목(적요) 선택 시 처리
+function syncExpenseItem() {
+  // 선택된 목 값은 submitExpense에서 읽어서 저장
+}
+// 수입 목(적요) 선택 시 처리
+function syncIncomeItem() {
+  // 선택된 목 값은 submitIncome에서 읽어서 저장
 }
 
 // ═══════════════════════════════════════
@@ -1485,6 +1529,7 @@ function handleAccountSelect(sel, type, callbackFn) {
   if (seqMatch) updateClaimBudget(Number(seqMatch[1]));
   // 지출 힌트
   if (sel.id === 'expAccount') updateExpHint();
+  if (sel.id === 'inAccount') updateItemSelect('income', sel.value);
 }
 
 // 모든 계정 select 동기화 (새 계정 추가 시)
@@ -1502,8 +1547,8 @@ function renderBudgetTable() {
     var tag = b.type==='income'?'<span class="tag tin">수입</span>':'<span class="tag twarn">지출</span>';
     return '<tr data-id="'+b.id+'">'
       +'<td class="ctr">'+tag+'</td>'
-      +'<td><input type="text" value="'+esc(b.account||'')+'" onchange="setBF('+b.id+',\'account\',this.value)" placeholder="계정명"></td>'
-      +'<td><input type="text" value="'+esc(b.item||'')+'" onchange="setBF('+b.id+',\'item\',this.value)" placeholder="목"></td>'
+      +'<td><input type="text" value="'+esc(b.account||'')+'" onchange="setBF('+b.id+',\'account\',this.value)" placeholder="항/목(계정)"></td>'
+      +'<td><input type="text" value="'+esc(b.item||'')+'" onchange="setBF('+b.id+',\'item\',this.value)" placeholder="적요"></td>'
       +'<td>'+amtInput(b.id,'amtA',b.amtA)+'</td>'
       +'<td>'+amtInput(b.id,'amtB',b.amtB)+'</td>'
       +'<td>'+amtInput(b.id,'amtC',b.amtC)+'</td>'
