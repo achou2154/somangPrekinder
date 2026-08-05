@@ -257,6 +257,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 
 <!-- ① 수입 등록 -->
 <div id="tab-income" class="tab-panel">
+  <div style="background:#e8eef8;border-left:4px solid var(--blue);padding:9px 14px;border-radius:0 5px 5px 0;margin-bottom:14px;font-size:12px;color:var(--blue);">
+    <i class="fa-solid fa-circle-info"></i> <strong>계정 항목 수정 방법:</strong> 설정 또는 예산계획서에서 수정 저장하면 지출, 수입에 모두 연동됩니다.
+  </div>
   <div class="reg-layout">
     <div class="card" style="height:fit-content;">
       <div class="card-head"><h3>➕ 수입 등록</h3></div>
@@ -292,6 +295,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 
 <!-- ② 지출 등록 -->
 <div id="tab-expense" class="tab-panel active">
+  <div style="background:#e8eef8;border-left:4px solid var(--blue);padding:9px 14px;border-radius:0 5px 5px 0;margin-bottom:14px;font-size:12px;color:var(--blue);">
+    <i class="fa-solid fa-circle-info"></i> <strong>계정 항목 수정 방법:</strong> 설정 또는 예산계획서에서 수정 저장하면 지출, 수입에 모두 연동됩니다.
+  </div>
   <div class="reg-layout">
     <div class="card" style="height:fit-content;">
       <div class="card-head"><h3>➖ 지출 등록</h3></div>
@@ -303,7 +309,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         </div>
         <div class="field"><label>금액 <span class="req">*</span></label><input type="number" id="expAmount" placeholder="원 단위"></div>
         <div class="field"><label>적요 <span class="req">*</span></label><input type="text" id="expSummary" placeholder="상세 내역"></div>
-        <div class="field"><label>영수증 <span class="req">*</span></label>
+        <div class="field"><label>영수증 <span style="font-size:10px;color:#888;">(선택)</span></label>
           <input type="file" id="expReceipt" accept="image/*,application/pdf" capture="environment" style="font-size:12px;">
         </div>
         <div class="field"><label>비고</label><input type="text" id="expNote"></div>
@@ -351,6 +357,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 
 <!-- ③ 예산계획서 -->
 <div id="tab-budget" class="tab-panel">
+  <div style="background:#e8eef8;border-left:4px solid var(--blue);padding:9px 14px;border-radius:0 5px 5px 0;margin-bottom:14px;font-size:12px;color:var(--blue);">
+    <i class="fa-solid fa-circle-info"></i> <strong>계정 항목 수정 방법:</strong> 설정 또는 예산계획서에서 수정 저장하면 지출, 수입에 모두 연동됩니다.
+  </div>
   <div class="card">
     <div class="card-head">
       <h3>📋 예산계획서 — <span id="budgetYrTitle"></span></h3>
@@ -1086,7 +1095,6 @@ async function submitExpense() {
   var note    = document.getElementById('expNote').value.trim();
   var file    = document.getElementById('expReceipt').files[0];
   if (!date||!account||amount<=0||!summary) return alert('일자, 계정, 금액, 적요는 필수입니다.');
-  if (!file) return alert('영수증 파일은 필수입니다.');
   var b64 = await fileToBase64(file);
   var payload = {action:'addExpense', year:currentYear, id:Date.now(), date:date, account:account, amount:amount, summary:summary, note:note, receiptFile:b64, receiptName:file.name, receiptType:file.type};
   var res = await postToServer(payload, '지출 등록 및 영수증 업로드 중...');
@@ -1732,12 +1740,17 @@ function printResolution(id) {
 function buildResolutionHtml(e) {
   var receiptArea = '';
   var imgSrc = e.receiptData || (e.receiptUrl ? driveImgUrl(e.receiptUrl) : '');
+  var receiptBoxStyle, receiptContent;
   if (imgSrc) {
-    receiptArea = '<div style="text-align:center;padding:6px 0;">'
-      +'<img src="'+imgSrc+'" style="max-width:100%;max-height:190mm;object-fit:contain;display:block;margin:auto;">'
-      +'</div>';
+    // 영수증 있음: 이미지에 맞게
+    receiptBoxStyle = 'border:2px dashed #aaa;padding:8px;min-height:80mm;background:#fafafa;';
+    receiptContent  = '<p style="text-align:center;font-size:9pt;color:#888;margin-bottom:4px;">▼ 영수증 붙이는 곳</p>'
+      +'<div style="text-align:center;"><img src="'+imgSrc+'" style="max-width:100%;max-height:190mm;object-fit:contain;display:block;margin:auto;"></div>';
   } else {
-    receiptArea = '<p style="text-align:center;font-size:9pt;color:#aaa;padding:20px 0;">※ 인쇄 후 영수증 원본을 이 칸에 첨부해 주세요.</p>';
+    // 영수증 없음: A4에서 최대 크기
+    receiptBoxStyle = 'border:2px dashed #aaa;padding:8px;height:200mm;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;';
+    receiptContent  = '<p style="font-size:9pt;color:#888;margin-bottom:8px;">▼ 영수증 붙이는 곳 (A4)</p>'
+      +'<p style="font-size:8pt;color:#ccc;">※ 인쇄 후 영수증 원본을 이 칸에 첨부해 주세요.</p>';
   }
   return '<div class="print-wrap" style="page-break-after:always;">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">'
@@ -1751,9 +1764,8 @@ function buildResolutionHtml(e) {
     +'<tr><th>금 액</th><td colspan="3" style="font-size:13pt;font-weight:bold;">일금 '+amtToKor(e.amount)+'원정 （₩ '+fmt(e.amount)+'）</td></tr>'
     +'<tr><th>비 고</th><td colspan="3">'+esc(e.note||'-')+'</td></tr>'
     +'</table>'
-    +'<div style="border:2px dashed #aaa;padding:10px;min-height:80mm;background:#fafafa;">'
-    +'<p style="text-align:center;font-size:9pt;color:#888;margin-bottom:4px;">▼ 영수증 붙이는 곳 (A4)</p>'
-    +receiptArea+'</div>'
+    +'<div style="'+receiptBoxStyle+'">'
+    +receiptContent+'</div>'
     +'<div class="note-list">주) 1.비용집행시 영수증 1매당 사용 양식<br>2.비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.<br>3.개인카드사용, 개인용도로 사용은 엄하게 금지합니다.</div>'
     +'</div>';
 }
