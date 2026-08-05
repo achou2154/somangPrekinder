@@ -572,6 +572,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <span id="sSignPlaceholder1" class="sign-placeholder"><i class="fa-solid fa-image"></i><br>클릭하여 업로드</span>
           </div>
           <input type="file" id="sSignFile1" accept="image/*" style="display:none;" onchange="loadSignImg(1,this)">
+          <input type="text" id="sSignName1" placeholder="이름" style="margin-top:4px;width:100%;padding:5px 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:'Noto Sans KR',sans-serif;">
           <button class="btn btn-ghost btn-sm" style="margin-top:4px;width:100%;" onclick="clearSign(1)">지우기</button>
         </div>
         <div class="field">
@@ -581,6 +582,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <span id="sSignPlaceholder2" class="sign-placeholder"><i class="fa-solid fa-image"></i><br>클릭하여 업로드</span>
           </div>
           <input type="file" id="sSignFile2" accept="image/*" style="display:none;" onchange="loadSignImg(2,this)">
+          <input type="text" id="sSignName2" placeholder="이름" style="margin-top:4px;width:100%;padding:5px 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:'Noto Sans KR',sans-serif;">
           <button class="btn btn-ghost btn-sm" style="margin-top:4px;width:100%;" onclick="clearSign(2)">지우기</button>
         </div>
         <div class="field">
@@ -590,6 +592,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <span id="sSignPlaceholder3" class="sign-placeholder"><i class="fa-solid fa-image"></i><br>클릭하여 업로드</span>
           </div>
           <input type="file" id="sSignFile3" accept="image/*" style="display:none;" onchange="loadSignImg(3,this)">
+          <input type="text" id="sSignName3" placeholder="이름" style="margin-top:4px;width:100%;padding:5px 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:'Noto Sans KR',sans-serif;">
           <button class="btn btn-ghost btn-sm" style="margin-top:4px;width:100%;" onclick="clearSign(3)">지우기</button>
         </div>
         <div class="field">
@@ -599,6 +602,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <span id="sSignPlaceholder4" class="sign-placeholder"><i class="fa-solid fa-image"></i><br>클릭하여 업로드</span>
           </div>
           <input type="file" id="sSignFile4" accept="image/*" style="display:none;" onchange="loadSignImg(4,this)">
+          <input type="text" id="sSignName4" placeholder="이름" style="margin-top:4px;width:100%;padding:5px 8px;border:1px solid var(--rule);border-radius:4px;font-size:12px;font-family:'Noto Sans KR',sans-serif;">
           <button class="btn btn-ghost btn-sm" style="margin-top:4px;width:100%;" onclick="clearSign(4)">지우기</button>
         </div>
       </div>
@@ -667,10 +671,14 @@ var cfg = {
   apiUrl:  localStorage.getItem('cf_api') || 'https://script.google.com/macros/s/AKfycbwjGalXncXIAgHRnzlesYSTzSNef7UkFriwppR1z-Dk4zIoAxyoB0UGJ7wclM6Otig/exec',
   church:  localStorage.getItem('cf_church') || '소망교회',
   dept:    localStorage.getItem('cf_dept')   || '',
-  sign1:   localStorage.getItem('cf_s1')     || '',
-  sign2:   localStorage.getItem('cf_s2')     || '',
-  sign3:   localStorage.getItem('cf_s3')     || '',
-  sign4:   localStorage.getItem('cf_s4')     || ''
+  sign1:   localStorage.getItem('cf_s1')  || '',
+  sign2:   localStorage.getItem('cf_s2')  || '',
+  sign3:   localStorage.getItem('cf_s3')  || '',
+  sign4:   localStorage.getItem('cf_s4')  || '',
+  sname1:  localStorage.getItem('cf_sn1') || '',
+  sname2:  localStorage.getItem('cf_sn2') || '',
+  sname3:  localStorage.getItem('cf_sn3') || '',
+  sname4:  localStorage.getItem('cf_sn4') || ''
 };
 
 // ═══════════════════════════════════════
@@ -684,7 +692,11 @@ window.onload = function() {
   document.getElementById('sChurch').value     = cfg.church;
   document.getElementById('sDept').value       = cfg.dept;
   // 서명 이미지 복원
-  [1,2,3,4].forEach(function(i){ if(cfg['sign'+i]) restoreSignImg(i, cfg['sign'+i]); });
+  [1,2,3,4].forEach(function(i){
+    if(cfg['sign'+i]) restoreSignImg(i, cfg['sign'+i]);
+    var nameEl = document.getElementById('sSignName'+i);
+    if(nameEl) nameEl.value = cfg['sname'+i] || '';
+  });
   updateYearDisplay();
   if (cfg.apiUrl) fetchFromServer();
   else setBadge('wait');
@@ -941,6 +953,14 @@ function saveSettings() {
   cfg.church = document.getElementById('sChurch').value.trim() || '소망교회';
   cfg.dept   = document.getElementById('sDept').value.trim();
   // 서명은 loadSignImg/clearSign에서 이미 저장됨
+  // 이름 저장
+  [1,2,3,4].forEach(function(i){
+    var el = document.getElementById('sSignName'+i);
+    if (el) {
+      cfg['sname'+i] = el.value.trim();
+      localStorage.setItem('cf_sn'+i, cfg['sname'+i]);
+    }
+  });
   localStorage.setItem('cf_church', cfg.church);
   localStorage.setItem('cf_dept',   cfg.dept);
   applyConfig(); toast('✅ 설정 저장 완료');
@@ -1641,13 +1661,17 @@ function clearSign(n) {
 }
 
 function signRow(labels) {
-  var heads = labels.map(function(l){return '<td class="sh" style="min-width:70px;">'+l+'</td>';}).join('');
+  var heads = labels.map(function(l){return '<td class="sh" style="min-width:70px;letter-spacing:-.03em;white-space:nowrap;font-size:8pt;">'+l+'</td>';}).join('');
   var sigs  = labels.map(function(l,i){
-    var b64 = [cfg.sign1,cfg.sign2,cfg.sign3,cfg.sign4][i]||'';
-    var cell = b64
-      ? '<img src="'+b64+'" style="max-width:68px;max-height:34px;object-fit:contain;display:block;margin:auto;">'
-      : '&nbsp;';
-    return '<td class="sb">'+cell+'</td>';
+    var b64  = [cfg.sign1,cfg.sign2,cfg.sign3,cfg.sign4][i]||'';
+    var name = [cfg.sname1,cfg.sname2,cfg.sname3,cfg.sname4][i]||'';
+    var imgHtml = b64
+      ? '<img src="'+b64+'" style="max-width:68px;max-height:30px;object-fit:contain;display:block;margin:auto;">'
+      : '';
+    var nameHtml = name
+      ? '<div style="font-size:8pt;text-align:center;margin-top:2px;font-weight:600;">'+esc(name)+'</div>'
+      : '';
+    return '<td class="sb" style="vertical-align:middle;padding:3px;">'+imgHtml+nameHtml+'</td>';
   }).join('');
   return '<table class="sign-tbl"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
 }
