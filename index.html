@@ -634,7 +634,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 var currentYear = new Date().getFullYear();
 var state = {}; // { [year]: { incomes:[], expenses:[], budgets:[] } }
 var cfg = {
-  apiUrl:  localStorage.getItem('cf_api')    || '',
+  apiUrl:  localStorage.getItem('cf_api') || 'https://script.google.com/macros/s/AKfycbwjGalXncXIAgHRnzlesYSTzSNef7UkFriwppR1z-Dk4zIoAxyoB0UGJ7wclM6Otig/exec',
   church:  localStorage.getItem('cf_church') || '소망교회',
   dept:    localStorage.getItem('cf_dept')   || '',
   sign1:   localStorage.getItem('cf_s1')     || '',
