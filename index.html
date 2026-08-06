@@ -20,7 +20,7 @@
   --shadow-md:0 4px 24px rgba(26,26,46,.13);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--paper);color:var(--ink);font-size:21px;line-height:1.6;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.6;}
 
 /* ── HEADER ── */
 header{background:var(--ink);color:#fff;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow-md);}
@@ -164,20 +164,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   }
   #printArea table { width:100%; border-collapse:collapse; font-size:8pt; }
   #printArea th, #printArea td { border:1px solid #000; padding:3px 4px; word-break:keep-all; }
-  /* 기본: 세로 (일일수지, 재정청구) */
   @page { size: A4 portrait; margin: 10mm; }
-  /* 가로 출력 클래스 */
-  #printArea.landscape { transform: none; }
-  @page :first { size: A4 portrait; }
 }
 #printArea{display:none;}
-#printArea.landscape-print { display:none; }
-@media print {
-  #printArea.landscape-print {
-    display:block;
-  }
-  #printArea.landscape-print + style { display:none; }
-}
 
 /* ── 감사탭 카드 ── */
 .audit-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:640px;}
@@ -271,8 +260,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 <!-- HEADER -->
 <header>
   <div class="hbrand">
-    <img src="data:image/png;base64,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" style="height:36px;object-fit:contain;">
-    <h1 style="font-family:'Noto Serif KR',serif;font-weight:900;letter-spacing:-.01em;">소망교회 재정 관리<span id="hDept"></span></h1>
+    <span class="cross">✝</span>
+    <h1>소망교회 재정 관리<span id="hDept"></span></h1>
   </div>
   <div class="hright">
     <div class="url-box">
@@ -527,15 +516,6 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <button class="btn btn-ghost btn-sm" onclick="printDaily()"><i class="fa-solid fa-print"></i> 인쇄</button>
         <button class="btn btn-ghost btn-sm" onclick="exportDailyExcel()"><i class="fa-solid fa-file-excel"></i> 엑셀</button>
       </div>
-    </div>
-    <!-- 날짜 기간 선택 -->
-    <div style="padding:10px 16px;background:var(--blue-lt);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <label style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap;">📆 출력 기간</label>
-      <input type="date" id="dailyFrom" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
-      <span style="font-size:12px;color:var(--ink-soft);">~</span>
-      <input type="date" id="dailyTo" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
-      <button class="btn btn-primary btn-sm" onclick="renderDailyTable()">적용</button>
-      <button class="btn btn-ghost btn-sm" onclick="resetDailyFilter()">전체</button>
     </div>
     <div style="overflow-x:auto;">
       <table class="tbl">
@@ -901,13 +881,7 @@ function switchTab(id) {
   document.getElementById('tab-'+id).classList.add('active');
   event.currentTarget.classList.add('active');
   renderAll();
-  if (id === 'settings') {
-    renderAccountSettings();
-    // 모바일에서 설정 탭 접근 시 경고
-    if (window.innerWidth <= 700) {
-      alert('⚠️ 스마트폰에서 설정(항목 수정 등) 변경 금지!');
-    }
-  }
+  if (id === 'settings') renderAccountSettings();
 }
 
 // ═══════════════════════════════════════
@@ -1753,34 +1727,23 @@ function renderBudgetFooter() {
 }
 
 // 일일수지내역서
-function resetDailyFilter() {
-  var df = document.getElementById('dailyFrom'); if(df) df.value='';
-  var dt = document.getElementById('dailyTo');   if(dt) dt.value='';
-  renderDailyTable();
-}
-
 function renderDailyTable() {
   var s = curState();
-  var from = document.getElementById('dailyFrom') ? document.getElementById('dailyFrom').value : '';
-  var to   = document.getElementById('dailyTo')   ? document.getElementById('dailyTo').value   : '';
   var all = [];
   (s.incomes||[]).forEach(function(r){all.push({date:r.date,summary:r.summary,account:r.account,income:r.amount,expense:0,note:r.note||''});});
   (s.expenses||[]).forEach(function(r){all.push({date:r.date,summary:r.summary,account:r.account,income:0,expense:r.amount,note:r.note||''});});
   all.sort(function(a,b){return a.date<b.date?-1:1;});
   var tbody = document.getElementById('dailyBody');
   if (!all.length) { tbody.innerHTML='<tr class="empty-cell"><td colspan="7">등록된 내역이 없습니다.</td></tr>'; return; }
+  var bal = 0;
+  // 이월금 첫 행
   var carryRow = (s.incomes||[]).find(function(r){return r.account==='전년도에서이월금';});
-  var carryAmt = carryRow ? Number(carryRow.amount) : 0;
-  var bal = carryAmt;
-  // 시작일 이전 잔액 누적
-  if (from) { all.forEach(function(r){ if(r.account!=='전년도에서이월금' && r.date < from) bal += r.income - r.expense; }); }
   var rows = '';
-  rows += '<tr style="background:var(--paper);font-weight:600;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td style="color:var(--ink-soft);">이월금</td><td class="num" style="color:var(--green);">'+fmt(carryAmt)+'</td><td></td><td class="num" style="font-weight:700;">'+fmt(bal)+'</td><td></td></tr>';
+  rows += '<tr style="background:var(--paper);font-weight:600;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td style="color:var(--ink-soft);">이월금</td><td class="num" style="color:var(--green);">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td><td class="num" style="font-weight:700;">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td></tr>';
+  bal = carryRow ? Number(carryRow.amount) : 0;
   all.forEach(function(r){
-    if (r.account==='전년도에서이월금') return;
+    if (r.account==='전년도에서이월금') return; // 이월금은 위에서 처리
     bal += r.income - r.expense;
-    if (from && r.date < from) return;
-    if (to   && r.date > to)   return;
     rows += '<tr><td style="white-space:nowrap;color:var(--ink-soft);">'+esc(r.date)+'</td><td>'+esc(r.summary)+'</td><td>'+esc(r.account)+'</td>'
       +'<td class="num" style="color:var(--green);">'+(r.income?fmt(r.income)+'원':'')+'</td>'
       +'<td class="num" style="color:var(--red);">'+(r.expense?fmt(r.expense)+'원':'')+'</td>'
@@ -1999,31 +1962,22 @@ function driveImgUrl(url) {
   return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200';
 }
 
-function doPrint(html, landscape) {
+function doPrint(html) {
   var area = document.getElementById('printArea');
-  // 가로/세로 페이지 방향 동적 적용
-  var pageStyle = document.getElementById('dynamicPageStyle');
-  if (!pageStyle) {
-    pageStyle = document.createElement('style');
-    pageStyle.id = 'dynamicPageStyle';
-    document.head.appendChild(pageStyle);
-  }
-  pageStyle.textContent = landscape
-    ? '@media print { @page { size: A4 landscape; margin: 8mm; } }'
-    : '@media print { @page { size: A4 portrait; margin: 10mm; } }';
-
   area.innerHTML = html;
   area.style.display = 'block';
 
+  // 이미지가 있으면 로드 완료 후 인쇄
   var imgs = area.querySelectorAll('img');
   if (!imgs.length) {
+    // 모바일 렌더링 대기 (100ms)
     setTimeout(function() {
       window.print();
       setTimeout(function() {
         area.style.display = 'none';
         area.innerHTML = '';
       }, 500);
-    }, 150);
+    }, 100);
     return;
   }
   var total = imgs.length, loaded = 0;
@@ -2037,7 +1991,7 @@ function doPrint(html, landscape) {
           area.style.display = 'none';
           area.innerHTML = '';
         }, 500);
-      }, 150);
+      }, 100);
     }
   }
   imgs.forEach(function(img) {
@@ -2172,39 +2126,32 @@ function printBudgetPlan() {
     +'1. 비전센터 증축공사로 인한 비용발생으로 2025년 예산계획를 2024년대비 예산범위내에서 편성하시기 바랍니다.<br>'
     +'2. 2026년 예산집행시 5~10% 절감운용되어야하며 추가예산은 없습니다.<br>'
     +'3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.</div>'
-    +'</div>'), true);
+    +'</div>');
 }
 
 // 일일수지 인쇄
 function printDaily() {
   var s = curState();
-  var from = document.getElementById('dailyFrom') ? document.getElementById('dailyFrom').value : '';
-  var to   = document.getElementById('dailyTo')   ? document.getElementById('dailyTo').value   : '';
   var all=[];
   (s.incomes||[]).forEach(function(r){if(r.account!=='전년도에서이월금') all.push({date:r.date,summary:r.summary,account:r.account,income:r.amount,expense:0,note:r.note||''});});
   (s.expenses||[]).forEach(function(r){all.push({date:r.date,summary:r.summary,account:r.account,income:0,expense:r.amount,note:r.note||''});});
   all.sort(function(a,b){return a.date<b.date?-1:1;});
   var carry=(s.incomes||[]).find(function(r){return r.account==='전년도에서이월금';});
-  var carryAmt=carry?Number(carry.amount):0;
-  var bal=carryAmt;
-  if (from) { all.forEach(function(r){ if(r.date < from) bal += r.income - r.expense; }); }
-  var periodLabel=(from||to)?' ('+(from||'')+' ~ '+(to||'')+')':'';
-  var rows='<tr style="font-weight:bold;background:#f0f0f0;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td>이월금</td><td class="pr">'+fmt(carryAmt)+'</td><td></td><td class="pr">'+fmt(bal)+'</td><td></td></tr>';
+  var bal=carry?Number(carry.amount):0;
+  var rows='<tr style="font-weight:bold;background:#f0f0f0;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td>이월금</td><td class="pr">'+fmt(bal)+'</td><td></td><td class="pr">'+fmt(bal)+'</td><td></td></tr>';
   all.forEach(function(r){
     bal+=r.income-r.expense;
-    if(from && r.date<from) return;
-    if(to   && r.date>to)   return;
     rows+='<tr><td>'+esc(r.date)+'</td><td>'+esc(r.summary)+'</td><td>'+esc(r.account)+'</td>'
       +'<td class="pr">'+(r.income?fmt(r.income):'')+'</td><td class="pr">'+(r.expense?fmt(r.expense):'')+'</td>'
       +'<td class="pr" style="font-weight:bold;">'+fmt(bal)+'</td><td>'+esc(r.note)+'</td></tr>';
   });
   doPrint('<div class="print-wrap">'
-    +'<div class="print-title">'+currentYear+'년도 수입·지출 일일내역서'+periodLabel+'</div>'
+    +'<div class="print-title">'+currentYear+'년도 수입·지출 일일내역서</div>'
     +'<p style="text-align:right;font-size:9pt;margin-bottom:8px;">소망교회 '+esc(cfg.dept)+' 팀(부)　（단위: 원）</p>'
     +'<table class="ptbl"><thead><tr><th>년월일</th><th>적요</th><th>계정</th><th>수입(C)</th><th>지출(D)</th><th>잔액</th><th>비고</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table>'
     +'<div class="note-list">주) 잔액은 통장잔액과 일치되어야 함</div>'
-    +'</div>', false);
+    +'</div>');
 }
 
 // 월별수지 인쇄
@@ -2216,7 +2163,7 @@ function printMonthly() {
     +'<p style="text-align:right;font-size:9pt;margin-bottom:8px;">소망교회 '+esc(cfg.dept)+' 팀(부)　（단위: 원）</p>'
     +inner
     +'<div class="note-list">주) 잔액은 통장잔액과 일치되어야 함</div>'
-    +'</div>'), true);
+    +'</div>');
 }
 
 // 수지결산보고서 인쇄
@@ -2233,7 +2180,7 @@ function printSettlement() {
     +'1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.<br>'
     +'2. 실예산 배정액은 총예산에서 년말 재정팀으로 환입되지않은 전년도에서 이월된 잔액을 차감한후 배정됩니다.<br>'
     +'3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.</div>'
-    +'</div>'), true);
+    +'</div>');
 }
 
 function exportSettlementExcel() {
