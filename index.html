@@ -517,6 +517,34 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <button class="btn btn-ghost btn-sm" onclick="exportDailyExcel()"><i class="fa-solid fa-file-excel"></i> 엑셀</button>
       </div>
     </div>
+    <!-- 기간 선택 -->
+    <div style="padding:12px 16px;background:var(--blue-lt);border-bottom:1px solid var(--rule);">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <label style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap;">📆 날짜 범위</label>
+        <input type="date" id="dailyFrom" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+        <span style="font-size:12px;color:var(--ink-soft);">~</span>
+        <input type="date" id="dailyTo" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="resetDailyFilter()">전체</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap;">📅 월 선택</label>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <label style="font-size:11px;" title="전체"><input type="checkbox" id="dailyMonthAll" onchange="toggleAllMonths(this.checked)" checked> 전체</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="01" checked> 1월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="02" checked> 2월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="03" checked> 3월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="04" checked> 4월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="05" checked> 5월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="06" checked> 6월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="07" checked> 7월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="08" checked> 8월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="09" checked> 9월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="10" checked> 10월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="11" checked> 11월</label>
+          <label style="font-size:11px;"><input type="checkbox" class="daily-month" value="12" checked> 12월</label>
+        </div>
+      </div>
+    </div>
     <div style="overflow-x:auto;">
       <table class="tbl">
         <thead><tr><th style="width:100px;">년월일</th><th>적요</th><th style="width:120px;">계정</th><th class="num" style="width:110px;">수입(C)</th><th class="num" style="width:110px;">지출(D)</th><th class="num" style="width:120px;">잔액</th><th style="width:100px;">비고</th></tr></thead>
@@ -536,6 +564,15 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <button class="btn btn-ghost btn-sm" onclick="exportMonthlyExcel()"><i class="fa-solid fa-file-excel"></i> 엑셀</button>
       </div>
     </div>
+    <!-- 기간 선택 -->
+    <div style="padding:12px 16px;background:var(--blue-lt);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <label style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap;">📆 기간</label>
+      <input type="date" id="monthlyFrom" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <span style="font-size:12px;color:var(--ink-soft);">~</span>
+      <input type="date" id="monthlyTo" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="resetMonthlyFilter()">전체</button>
+      <button class="btn btn-primary btn-sm" onclick="renderMonthlyTable()">적용</button>
+    </div>
     <div style="overflow-x:auto;"><div id="monthlyWrap"></div></div>
   </div>
 </div>
@@ -549,6 +586,15 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <button class="btn btn-ghost btn-sm" onclick="printSettlement()"><i class="fa-solid fa-print"></i> 인쇄</button>
         <button class="btn btn-ghost btn-sm" onclick="exportSettlementExcel()"><i class="fa-solid fa-file-excel"></i> 엑셀</button>
       </div>
+    </div>
+    <!-- 기간 선택 -->
+    <div style="padding:12px 16px;background:var(--blue-lt);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <label style="font-size:12px;font-weight:700;color:var(--blue);white-space:nowrap;">📆 기간</label>
+      <input type="date" id="settlementFrom" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <span style="font-size:12px;color:var(--ink-soft);">~</span>
+      <input type="date" id="settlementTo" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="resetSettlementFilter()">전체</button>
+      <button class="btn btn-primary btn-sm" onclick="renderSettlementTable()">적용</button>
     </div>
     <div style="overflow-x:auto;">
       <table class="tbl" id="settlementTable">
@@ -1727,23 +1773,85 @@ function renderBudgetFooter() {
 }
 
 // 일일수지내역서
+// ── 기간 필터 헬퍼 ──
+function getDailyFilter() {
+  var from  = document.getElementById('dailyFrom')  ? document.getElementById('dailyFrom').value  : '';
+  var to    = document.getElementById('dailyTo')    ? document.getElementById('dailyTo').value    : '';
+  var months = [];
+  document.querySelectorAll('.daily-month:checked').forEach(function(c){ months.push(c.value); });
+  return { from:from, to:to, months:months };
+}
+function getMonthlyFilter() {
+  var from = document.getElementById('monthlyFrom') ? document.getElementById('monthlyFrom').value : '';
+  var to   = document.getElementById('monthlyTo')   ? document.getElementById('monthlyTo').value   : '';
+  return { from:from, to:to };
+}
+function getSettlementFilter() {
+  var from = document.getElementById('settlementFrom') ? document.getElementById('settlementFrom').value : '';
+  var to   = document.getElementById('settlementTo')   ? document.getElementById('settlementTo').value   : '';
+  return { from:from, to:to };
+}
+function inDateRange(date, from, to, months) {
+  if (from && date < from) return false;
+  if (to   && date > to)   return false;
+  if (months && months.length > 0 && months.length < 12) {
+    var m = date.slice(5,7);
+    if (months.indexOf(m) < 0) return false;
+  }
+  return true;
+}
+function toggleAllMonths(checked) {
+  document.querySelectorAll('.daily-month').forEach(function(c){ c.checked = checked; });
+  renderDailyTable();
+}
+function resetDailyFilter() {
+  var df = document.getElementById('dailyFrom'); if(df) df.value='';
+  var dt = document.getElementById('dailyTo');   if(dt) dt.value='';
+  document.querySelectorAll('.daily-month').forEach(function(c){ c.checked=true; });
+  var ma = document.getElementById('dailyMonthAll'); if(ma) ma.checked=true;
+  renderDailyTable();
+}
+function resetMonthlyFilter() {
+  var mf = document.getElementById('monthlyFrom'); if(mf) mf.value='';
+  var mt = document.getElementById('monthlyTo');   if(mt) mt.value='';
+  renderMonthlyTable();
+}
+function resetSettlementFilter() {
+  var sf = document.getElementById('settlementFrom'); if(sf) sf.value='';
+  var st = document.getElementById('settlementTo');   if(st) st.value='';
+  renderSettlementTable();
+}
+
 function renderDailyTable() {
   var s = curState();
+  var f = getDailyFilter();
   var all = [];
   (s.incomes||[]).forEach(function(r){all.push({date:r.date,summary:r.summary,account:r.account,income:r.amount,expense:0,note:r.note||''});});
   (s.expenses||[]).forEach(function(r){all.push({date:r.date,summary:r.summary,account:r.account,income:0,expense:r.amount,note:r.note||''});});
   all.sort(function(a,b){return a.date<b.date?-1:1;});
   var tbody = document.getElementById('dailyBody');
   if (!all.length) { tbody.innerHTML='<tr class="empty-cell"><td colspan="7">등록된 내역이 없습니다.</td></tr>'; return; }
-  var bal = 0;
-  // 이월금 첫 행
+  // 이월금 잔액 기준 (필터 전 전체로 계산)
   var carryRow = (s.incomes||[]).find(function(r){return r.account==='전년도에서이월금';});
+  var carryAmt = carryRow ? Number(carryRow.amount) : 0;
+  // 필터 시작 전 잔액 계산
+  var bal = carryAmt;
+  if (f.from) {
+    all.forEach(function(r){
+      if (r.account==='전년도에서이월금') return;
+      if (r.date < f.from) bal += r.income - r.expense;
+    });
+  }
   var rows = '';
-  rows += '<tr style="background:var(--paper);font-weight:600;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td style="color:var(--ink-soft);">이월금</td><td class="num" style="color:var(--green);">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td><td class="num" style="font-weight:700;">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td></tr>';
-  bal = carryRow ? Number(carryRow.amount) : 0;
+  // 이월금 행 (항상 첫 행)
+  rows += '<tr style="background:var(--paper);font-weight:600;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td style="color:var(--ink-soft);">이월금</td><td class="num" style="color:var(--green);">'+fmt(carryAmt)+'</td><td></td><td class="num" style="font-weight:700;">'+fmt(bal)+'</td><td></td></tr>';
+  var hasFiltered = false;
   all.forEach(function(r){
-    if (r.account==='전년도에서이월금') return; // 이월금은 위에서 처리
+    if (r.account==='전년도에서이월금') return;
     bal += r.income - r.expense;
+    // 필터 적용
+    if (!inDateRange(r.date, f.from, f.to, f.months)) return;
+    hasFiltered = true;
     rows += '<tr><td style="white-space:nowrap;color:var(--ink-soft);">'+esc(r.date)+'</td><td>'+esc(r.summary)+'</td><td>'+esc(r.account)+'</td>'
       +'<td class="num" style="color:var(--green);">'+(r.income?fmt(r.income)+'원':'')+'</td>'
       +'<td class="num" style="color:var(--red);">'+(r.expense?fmt(r.expense)+'원':'')+'</td>'
@@ -1756,13 +1864,22 @@ function renderDailyTable() {
 // 월별수지내역서
 function renderMonthlyTable() {
   var s = curState();
+  var f = getMonthlyFilter();
+  // 기간 필터 적용한 데이터
+  var filteredIncomes  = (s.incomes||[]).filter(function(r){ return r.account==='전년도에서이월금' || inDateRange(r.date, f.from, f.to, null); });
+  var filteredExpenses = (s.expenses||[]).filter(function(r){ return inDateRange(r.date, f.from, f.to, null); });
   // 수입 계정 목록
   var incAccounts = [];
   var seen = {};
-  (s.incomes||[]).forEach(function(r){if(!seen[r.account]&&r.account!=='전년도에서이월금'){seen[r.account]=1;incAccounts.push(r.account);}});
+  filteredIncomes.forEach(function(r){if(!seen[r.account]&&r.account!=='전년도에서이월금'){seen[r.account]=1;incAccounts.push(r.account);}});
   // 지출 계정 목록
-  var expAccounts = getExpenseAccounts();
-  var months = [1,2,3,4,5,6,7,8,9,10,11,12];
+  var expAccountsAll = getExpenseAccounts();
+  var expAccounts = expAccountsAll;
+  // 기간 내 월 범위
+  var fromM = f.from ? parseInt(f.from.slice(5,7)) : 1;
+  var toM   = f.to   ? parseInt(f.to.slice(5,7))   : 12;
+  var months = [];
+  for (var m = fromM; m <= toM; m++) months.push(m);
 
   // 헤더 생성
   var hdr1 = '<tr style="font-weight:700;background:var(--paper2);">'
@@ -1798,8 +1915,8 @@ function renderMonthlyTable() {
     var mStr = String(m).padStart(2,'0');
     var rowInc={}; incAccounts.forEach(function(a){rowInc[a]=0;});
     var rowExp={}; expAccounts.forEach(function(a){rowExp[a]=0;});
-    (s.incomes||[]).forEach(function(r){if(r.account!=='전년도에서이월금'&&r.date&&r.date.slice(5,7)===mStr){rowInc[r.account]=(rowInc[r.account]||0)+Number(r.amount);}});
-    (s.expenses||[]).forEach(function(r){if(r.date&&r.date.slice(5,7)===mStr){rowExp[r.account]=(rowExp[r.account]||0)+Number(r.amount);}});
+    (filteredIncomes||[]).forEach(function(r){if(r.account!=='전년도에서이월금'&&r.date&&r.date.slice(5,7)===mStr){rowInc[r.account]=(rowInc[r.account]||0)+Number(r.amount);}});
+    (filteredExpenses||[]).forEach(function(r){if(r.date&&r.date.slice(5,7)===mStr){rowExp[r.account]=(rowExp[r.account]||0)+Number(r.amount);}});
     var mIncSum = incAccounts.reduce(function(a,k){return a+(rowInc[k]||0);},0);
     var mExpSum = expAccounts.reduce(function(a,k){return a+(rowExp[k]||0);},0);
     runBal += mIncSum - mExpSum;
@@ -1841,11 +1958,17 @@ function renderMonthlyTable() {
 function renderSettlementTable() {
   var s  = curState();
   var sp = getState(currentYear-1);
+  var f  = getSettlementFilter();
   var tbody = document.getElementById('settlementBody');
 
+  // 기간 필터 적용
+  var filteredIncomes  = (s.incomes||[]).filter(function(r){ return inDateRange(r.date, f.from, f.to, null); });
+  var filteredExpenses = (s.expenses||[]).filter(function(r){ return inDateRange(r.date, f.from, f.to, null); });
+
   // 헤더 당해연도 표시
+  var periodLabel = (f.from||f.to) ? (f.from||'')+'~'+(f.to||'') : currentYear+'년도';
   var curHead = document.getElementById('stYrCurHead');
-  if (curHead) curHead.textContent = currentYear + '년도';
+  if (curHead) curHead.textContent = periodLabel;
 
   var incBudgets = (s.budgets||[]).filter(function(b){return b.type==='income';});
   var expBudgets = (s.budgets||[]).filter(function(b){return b.type==='expense';});
@@ -1880,11 +2003,11 @@ function renderSettlementTable() {
 
   var incRows = buildRows(incBudgets, '수입',
     function(b){ return (sp.incomes||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); },
-    function(b){ return (s.incomes||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
+    function(b){ return filteredIncomes.filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
   );
   var expRows = buildRows(expBudgets, '지출',
     function(b){ return (sp.expenses||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); },
-    function(b){ return (s.expenses||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
+    function(b){ return filteredExpenses.filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
   );
   tbody.innerHTML = incRows + expRows;
 
