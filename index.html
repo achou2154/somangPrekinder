@@ -384,11 +384,11 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field">
           <label>상세내역 <span class="req">*</span></label>
           <input type="text" id="expSummary" placeholder="상세 내역" oninput="autoSelectAccount('expense',this.value)">
-          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 키워드 자동입력, 수정필요!</div>
         </div>
         <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="expAccountWrap"></div>
           <div class="hint" id="expHint"></div>
+          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 상세내역 키워드 입력 시 자동지정, 수정필요!!!!</div>
         </div>
         <div class="field"><label>목(적요) <span class="req">*</span></label>
           <select id="expItem" style="width:100%;padding:8px 10px;border:1px solid var(--rule);border-radius:5px;font-size:13px;font-family:'Noto Sans KR',sans-serif;" onchange="syncExpenseItem()">
