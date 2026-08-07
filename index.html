@@ -2108,7 +2108,7 @@ function doPrint(html, landscape, fitOnePage) {
           if (h > contentH) {
             var scale = contentH / h;
             wrap.style.transformOrigin = 'top left';
-            wrap.style.transform = 'scale(' + scale + ')';
+            wrap.style.transform = 'scaleY(' + scale + ')';
           }
         }
       }
