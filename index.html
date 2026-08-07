@@ -164,6 +164,12 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   #printArea .print-wrap + .print-wrap { page-break-before: always; }
   #printArea table { width: 100%; border-collapse: collapse; }
   #printArea th, #printArea td { border: 1px solid #000; padding: 3px 5px; word-break: keep-all; }
+  /* 결재란(서명표): 인쇄 시 폭 고정·축소 (약 40%). ID 선택자로 위 규칙보다 우선. */
+  #printArea table.sign-tbl { width: auto; table-layout: fixed; }
+  #printArea .sign-tbl td { padding: 1px 2px; }
+  #printArea .sign-tbl .sh { font-size: 6.5pt; background:#f0f0f0; font-weight:bold; white-space:nowrap; }
+  #printArea .sign-tbl .sb { width: 46px; height: 22px; }
+  #printArea .sign-tbl .sb img { max-width: 42px; max-height: 18px; object-fit: contain; }
 }
 #printArea{ display: none; }
 
@@ -319,7 +325,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field">
           <label>상세내역 <span class="req">*</span></label>
           <input type="text" id="inSummary" placeholder="수입 내용 상세히" oninput="autoSelectAccount('income',this.value)">
-          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
+          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 키워드 자동입력, 수정필요!</div>
         </div>
         <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="inAccountWrap"></div>
@@ -371,7 +377,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <div class="field">
           <label>상세내역 <span class="req">*</span></label>
           <input type="text" id="expSummary" placeholder="상세 내역" oninput="autoSelectAccount('expense',this.value)">
-          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 주의 : 키워드로 자동 입력 되오니 수정이 필요할 수 있음!!</div>
+          <div style="font-size:11px;color:var(--red);margin-top:3px;font-weight:600;">※ 키워드 자동입력, 수정필요!</div>
         </div>
         <div class="field"><label>항/목(계정) <span class="req">*</span></label>
           <div id="expAccountWrap"></div>
