@@ -161,7 +161,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
     padding: 0;
     background: #fff;
   }
-  #printArea .print-wrap { page-break-after: always; }
+  #printArea .print-wrap + .print-wrap { page-break-before: always; }
   #printArea table { width: 100%; border-collapse: collapse; }
   #printArea th, #printArea td { border: 1px solid #000; padding: 3px 5px; word-break: keep-all; }
 }
@@ -188,6 +188,10 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 .sign-tbl td{border:1px solid #000;text-align:center;padding:3px 4px;}
 .sign-tbl .sh{background:#f0f0f0;font-weight:bold;font-size:8pt;letter-spacing:-.03em;white-space:nowrap;}
 .sign-tbl .sb{height:36px;width:70px;}
+.sign-tbl.compact{font-size:6pt;}
+.sign-tbl.compact td{padding:1px 2px;}
+.sign-tbl.compact .sh{font-size:6pt;padding:1px 2px;}
+.sign-tbl.compact .sb{height:20px;width:44px;}
 .sign-upload-box{border:2px dashed var(--rule);border-radius:6px;min-height:76px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .15s;padding:6px;background:var(--paper);}
 .sign-upload-box:hover{border-color:var(--blue);background:var(--blue-lt);}
 .sign-placeholder{font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.8;pointer-events:none;}
@@ -515,6 +519,15 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
         <button class="btn btn-ghost btn-sm" onclick="printDaily()"><i class="fa-solid fa-print"></i> 인쇄</button>
         <button class="btn btn-ghost btn-sm" onclick="exportDailyExcel()"><i class="fa-solid fa-file-excel"></i> 엑셀</button>
       </div>
+    </div>
+    <!-- 출력 범위(날짜) -->
+    <div style="padding:10px 16px;background:var(--blue-lt);border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;flex-wrap:wrap;" class="bulk-bar">
+      <label style="font-size:12px;font-weight:600;color:var(--blue);white-space:nowrap;">출력 범위</label>
+      <input type="date" id="dailyFrom" onchange="renderDailyTable()" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <span style="font-size:12px;color:var(--ink-soft);">~</span>
+      <input type="date" id="dailyTo" onchange="renderDailyTable()" style="font-size:12px;padding:4px 8px;border:1px solid var(--rule);border-radius:4px;">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('dailyFrom').value='';document.getElementById('dailyTo').value='';renderDailyTable();">전체</button>
+      <span id="dailyRangeInfo" style="font-size:11px;color:var(--ink-soft);margin-left:4px;"></span>
     </div>
     <div style="overflow-x:auto;">
       <table class="tbl">
@@ -1740,18 +1753,29 @@ function renderDailyTable() {
   var rows = '';
   rows += '<tr style="background:var(--paper);font-weight:600;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td style="color:var(--ink-soft);">이월금</td><td class="num" style="color:var(--green);">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td><td class="num" style="font-weight:700;">'+fmt(carryRow?carryRow.amount:0)+'</td><td></td></tr>';
   bal = carryRow ? Number(carryRow.amount) : 0;
+  var from = document.getElementById('dailyFrom') ? document.getElementById('dailyFrom').value : '';
+  var to   = document.getElementById('dailyTo')   ? document.getElementById('dailyTo').value   : '';
   var prevDate = '';
+  var shown = 0;
   all.forEach(function(r){
     if (r.account==='전년도에서이월금') return; // 이월금은 위에서 처리
     bal += r.income - r.expense;
+    if (from && r.date < from) return; // 범위 이전: 잔액에만 반영
+    if (to   && r.date > to)   return; // 범위 이후: 제외
     var dateCell = (r.date===prevDate) ? '' : esc(r.date);
     prevDate = r.date;
+    shown++;
     rows += '<tr><td style="white-space:nowrap;color:var(--ink-soft);">'+dateCell+'</td><td>'+esc(r.summary)+'</td><td>'+esc(r.account)+'</td>'
       +'<td class="num" style="color:var(--green);">'+(r.income?fmt(r.income)+'원':'')+'</td>'
       +'<td class="num" style="color:var(--red);">'+(r.expense?fmt(r.expense)+'원':'')+'</td>'
       +'<td class="num" style="font-weight:700;color:'+(bal<0?'var(--red)':'var(--blue)')+';">'+fmt(bal)+'원</td>'
       +'<td>'+esc(r.note)+'</td></tr>';
   });
+  var info = document.getElementById('dailyRangeInfo');
+  if (info) {
+    if (from || to) info.textContent = (from||'처음')+' ~ '+(to||'끝')+'  ('+shown+'건)';
+    else info.textContent = '전체';
+  }
   tbody.innerHTML = rows;
 }
 
@@ -1935,20 +1959,28 @@ function clearSign(n) {
   toast('서명 '+n+'번 삭제됨');
 }
 
-function signRow(labels) {
-  var heads = labels.map(function(l){return '<td class="sh" style="min-width:70px;letter-spacing:-.03em;white-space:nowrap;font-size:8pt;">'+l+'</td>';}).join('');
+function signRow(labels, compact) {
+  var cls      = 'sign-tbl' + (compact ? ' compact' : '');
+  var headMinW = compact ? '44px' : '70px';
+  var headFont = compact ? '6pt'  : '8pt';
+  var imgStyle = compact
+    ? 'max-width:40px;max-height:16px;object-fit:contain;display:block;margin:auto;'
+    : 'max-width:68px;max-height:30px;object-fit:contain;display:block;margin:auto;';
+  var nameFont = compact ? '6pt' : '8pt';
+  var cellPad  = compact ? '1px' : '3px';
+  var heads = labels.map(function(l){return '<td class="sh" style="min-width:'+headMinW+';letter-spacing:-.03em;white-space:nowrap;font-size:'+headFont+';">'+l+'</td>';}).join('');
   var sigs  = labels.map(function(l,i){
     var b64  = [cfg.sign1,cfg.sign2,cfg.sign3,cfg.sign4][i]||'';
     var name = [cfg.sname1,cfg.sname2,cfg.sname3,cfg.sname4][i]||'';
     var imgHtml = b64
-      ? '<img src="'+b64+'" style="max-width:68px;max-height:30px;object-fit:contain;display:block;margin:auto;">'
+      ? '<img src="'+b64+'" style="'+imgStyle+'">'
       : '';
     var nameHtml = name
-      ? '<div style="font-size:8pt;text-align:center;margin-top:2px;font-weight:600;">'+esc(name)+'</div>'
+      ? '<div style="font-size:'+nameFont+';text-align:center;margin-top:1px;font-weight:600;">'+esc(name)+'</div>'
       : '';
-    return '<td class="sb" style="vertical-align:middle;padding:3px;">'+imgHtml+nameHtml+'</td>';
+    return '<td class="sb" style="vertical-align:middle;padding:'+cellPad+';">'+imgHtml+nameHtml+'</td>';
   }).join('');
-  return '<table class="sign-tbl"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
+  return '<table class="'+cls+'"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
 }
 // 구글 드라이브 공유 URL → 직접 이미지 URL 변환
 function driveImgUrl(url) {
@@ -2034,11 +2066,11 @@ function buildResolutionHtml(e) {
     receiptContent  = '<p style="font-size:9pt;color:#888;margin-bottom:8px;">▼ 영수증 붙이는 곳 (A4)</p>'
       +'<p style="font-size:8pt;color:#ccc;">※ 인쇄 후 영수증 원본을 이 칸에 첨부해 주세요.</p>';
   }
-  return '<div class="print-wrap" style="page-break-after:always;">'
+  return '<div class="print-wrap">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">'
     +'<div><div class="print-title">비 용 지 출 결 의 서</div>'
     +'<p style="font-size:10pt;">소망교회 ('+esc(cfg.dept)+') 팀(부)</p></div>'
-    +signRow(['회계담당','부 장'])+'</div>'
+    +signRow(['회계담당','부 장'], true)+'</div>'
     +'<table class="ptbl" style="margin-bottom:12px;">'
     +'<tr><th style="width:80px;">일 자</th><td>'+esc(e.date)+'</td><th style="width:80px;">항</th><td style="font-weight:600;">'+esc(e.account)+'</td></tr>'
     +'<tr><th>목</th><td colspan="3">'+esc(e.item||e.account)+'</td></tr>'
@@ -2209,7 +2241,7 @@ function printSettlement() {
     +'<div class="print-title">'+currentYear+'년도 수입, 지출 결산보고서</div>'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
     +'<div><p style="font-size:10pt;">소망교회 '+esc(cfg.dept)+' 팀(부)<br>('+lastDay+')　（단위: 원）</p></div>'
-    +signRow(['회계총무','팀장','담당교역자','협력장로'])+'</div>'
+    +signRow(['회계총무','팀장','담당교역자','협력장로'], true)+'</div>'
     +(tbl ? tbl.outerHTML : '')
     +'<div class="note-list">'
     +'1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.<br>'
@@ -2383,9 +2415,9 @@ function buildClaimHtml(r) {
     +'<div class="print-title" style="text-align:left;font-size:15pt;margin-bottom:4px;">재정청구 및 지출결의서</div>'
     +'<p style="font-size:9pt;color:#555;">예수님의 몸인 본소망교회를 위하여 필요에 따라 다음 금원을 청구합니다.</p>'
     +'</div>'
-    +'<table class="sign-tbl">'
-    +'<tr><td class="sh" style="min-width:70px;">재정팀장</td><td class="sh" style="min-width:70px;">협력장로</td><td class="sh" style="min-width:70px;">담임목사</td></tr>'
-    +'<tr><td class="sb" style="height:44px;"></td><td class="sb"></td><td class="sb"></td></tr>'
+    +'<table class="sign-tbl compact">'
+    +'<tr><td class="sh" style="min-width:44px;">재정팀장</td><td class="sh" style="min-width:44px;">협력장로</td><td class="sh" style="min-width:44px;">담임목사</td></tr>'
+    +'<tr><td class="sb"></td><td class="sb"></td><td class="sb"></td></tr>'
     +'</table>'
     +'</div>';
 
@@ -2461,10 +2493,15 @@ function exportDailyExcel() {
   all.sort(function(a,b){return a.date<b.date?-1:1;});
   var carry=(s.incomes||[]).find(function(r){return r.account==='전년도에서이월금';});
   var bal=carry?Number(carry.amount):0;
+  var from = document.getElementById('dailyFrom') ? document.getElementById('dailyFrom').value : '';
+  var to   = document.getElementById('dailyTo')   ? document.getElementById('dailyTo').value   : '';
+  var periodLabel = (from||to) ? ' ('+(from||'')+' ~ '+(to||'')+')' : '';
   var rows='<tr style="background:#f0f0f0;font-weight:bold;"><td>'+currentYear+'.1.1.</td><td>전년도에서이월금</td><td>이월금</td><td>'+fmt(bal)+'</td><td></td><td>'+fmt(bal)+'</td><td></td></tr>';
   var prevDate='';
   all.forEach(function(r){
     bal+=r.income-r.expense;
+    if(from && r.date<from) return;
+    if(to   && r.date>to)   return;
     var dateCell = (r.date===prevDate) ? '' : esc(r.date);
     prevDate = r.date;
     rows+='<tr><td>'+dateCell+'</td><td>'+esc(r.summary)+'</td><td>'+esc(r.account)+'</td>'
@@ -2473,7 +2510,7 @@ function exportDailyExcel() {
   });
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8">'
     +'<style>td,th{border:1px solid #000;padding:4px 6px;}th{background:#e8e8e8;}</style></head>'
-    +'<body><h3>'+currentYear+'년도 수입·지출 일일내역서</h3>'
+    +'<body><h3>'+currentYear+'년도 수입·지출 일일내역서'+periodLabel+'</h3>'
     +'<table><thead><tr><th>년월일</th><th>적요</th><th>계정</th><th>수입(C)</th><th>지출(D)</th><th>잔액</th><th>비고</th></tr></thead>'
     +'<tbody>'+rows+'</tbody></table></body></html>';
   exportToExcel(html, currentYear+'_일일수지내역서.xls');
