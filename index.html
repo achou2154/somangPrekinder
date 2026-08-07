@@ -2122,7 +2122,7 @@ function printResolution(id) {
   var s = curState();
   var e = (s.expenses||[]).find(function(r){return r.id===id;});
   if (!e) return;
-  doPrint(buildResolutionHtml(e), false, 84);
+  doPrint(buildResolutionHtml(e), false);
 }
 
 // 결의서 HTML 생성 (단건 / 일괄 공용)
@@ -2242,7 +2242,7 @@ function printBudgetPlan() {
     +'1. 비전센터 증축공사로 인한 비용발생으로 2025년 예산계획를 2024년대비 예산범위내에서 편성하시기 바랍니다.<br>'
     +'2. 2026년 예산집행시 5~10% 절감운용되어야하며 추가예산은 없습니다.<br>'
     +'3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.</div>'
-    +'</div>', true, 86);  // 가로 + 86% 축소
+    +'</div>', true);  // 가로
 }
 function printDaily() {
   var s = curState();
@@ -2323,7 +2323,7 @@ function printSettlement() {
     +'1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.<br>'
     +'2. 실예산 배정액은 총예산에서 년말 재정팀으로 환입되지않은 전년도에서 이월된 잔액을 차감한후 배정됩니다.<br>'
     +'3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.</div>'
-    +'</div>', true, 84);  // 가로 + 84% 축소
+    +'</div>', true);  // 가로
 }
 
 function exportSettlementExcel() {
