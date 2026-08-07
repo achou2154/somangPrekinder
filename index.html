@@ -462,7 +462,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <th style="width:160px;">적요</th>
             <th class="num" style="width:110px;"><span id="yrPP2"></span>년 금액(A)</th>
             <th class="num" style="width:110px;"><span id="yrP2"></span>년 예산액(B)</th>
-            <th class="num" style="width:110px;"><span id="yrP3"></span>년 가결산(C)</th>
+            <th class="num" style="width:95px;">10/31까지<br>지출(가)</th>
+            <th class="num" style="width:95px;">11/1~12/31<br>예상지출(나)</th>
+            <th class="num" style="width:110px;"><span id="yrP3"></span>년 가결산(C)<br><span style="font-weight:400;font-size:10px;color:var(--ink-soft);">(가+나)</span></th>
             <th class="num" style="width:110px;"><span id="yrCur2"></span>년 예산(D)</th>
             <th class="num" style="width:100px;">전년대비(D-B)</th>
             <th class="num" style="width:100px;">금액대비(D-C)</th>
@@ -475,6 +477,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <td colspan="3" style="font-weight:700;color:var(--green);">수입 합계(1)</td>
             <td class="num" id="ftIncA" style="color:var(--green);">0</td>
             <td class="num" id="ftIncB" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncC1" style="color:var(--green);">0</td>
+            <td class="num" id="ftIncC2" style="color:var(--green);">0</td>
             <td class="num" id="ftIncC" style="color:var(--green);">0</td>
             <td class="num" id="ftIncD" style="color:var(--green);">0</td>
             <td class="num" id="ftIncDB">0</td>
@@ -488,6 +492,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <td colspan="3" style="font-weight:700;color:var(--red);">지출 합계(2)</td>
             <td class="num" id="ftExpA" style="color:var(--red);">0</td>
             <td class="num" id="ftExpB" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpC1" style="color:var(--red);">0</td>
+            <td class="num" id="ftExpC2" style="color:var(--red);">0</td>
             <td class="num" id="ftExpC" style="color:var(--red);">0</td>
             <td class="num" id="ftExpD" style="color:var(--red);">0</td>
             <td class="num" id="ftExpDB">0</td>
@@ -498,6 +504,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
             <td colspan="3" style="font-weight:700;">잔액(1-2)</td>
             <td class="num" id="ftRemA">0</td>
             <td class="num" id="ftRemB">0</td>
+            <td class="num" id="ftRemC1">0</td>
+            <td class="num" id="ftRemC2">0</td>
             <td class="num" id="ftRemC">0</td>
             <td class="num" id="ftRemD">0</td>
             <td class="num" id="ftRemDB">0</td>
@@ -1403,7 +1411,7 @@ async function saveEditIncome() {
 }
 function addBudgetRow(type) {
   var s = curState();
-  s.budgets.push({id:Date.now(), type:type, account:'', item:'', amtA:0, amtB:0, amtC:0, amtD:0});
+  s.budgets.push({id:Date.now(), type:type, account:'', item:'', amtA:0, amtB:0, amtC:0, amtC1:0, amtC2:0, amtD:0});
   renderBudgetTable();
 }
 
@@ -1428,6 +1436,8 @@ function inheritBudgetFromPrevYear() {
       amtA:    Number(b.amtB || 0),   // 직전연도 예산액(B) → 전전연도(A)
       amtB:    Number(b.amtD || 0),   // 직전연도 당해예산(D) → 직전연도(B)
       amtC:    0,
+      amtC1:   0,
+      amtC2:   0,
       amtD:    Number(b.amtD || 0)    // 당해예산 초기값도 직전연도D로 채워줌 (수정 가능)
     };
   });
@@ -1440,19 +1450,25 @@ function setBF(id, field, val) {
   if (!r) return;
   r[field] = (field==='type'||field==='account'||field==='item') ? val : (Number(val)||0);
 
-  // 해당 행의 D-B, D-C 셀 즉시 재계산
+  // 가결산 합계(C) = 가(C1) + 나(C2) 재계산
+  if (field==='amtC1' || field==='amtC2') {
+    r.amtC = Number(r.amtC1||0) + Number(r.amtC2||0);
+  }
+
+  // 해당 행의 합계(C), D-B, D-C 셀 즉시 재계산
   var row = document.querySelector('tr[data-id="'+id+'"]');
   if (row) {
     var cells = row.querySelectorAll('td');
-    // 8번째(인덱스7): 전년대비(D-B), 9번째(인덱스8): 금액대비(D-C)
+    // 0구분 1항 2목 3A 4B 5가 6나 7합계C 8D 9(D-B) 10(D-C) 11삭제
     var d = Number(r.amtD||0), b = Number(r.amtB||0), c = Number(r.amtC||0);
-    if (cells[7]) {
-      cells[7].textContent = fmt(d-b);
-      cells[7].style.color = (d-b<0)?'var(--red)':'var(--green)';
+    if (cells[7]) cells[7].textContent = fmt(c);
+    if (cells[9]) {
+      cells[9].textContent = fmt(d-b);
+      cells[9].style.color = (d-b<0)?'var(--red)':'var(--green)';
     }
-    if (cells[8]) {
-      cells[8].textContent = fmt(d-c);
-      cells[8].style.color = (d-c<0)?'var(--red)':'var(--green)';
+    if (cells[10]) {
+      cells[10].textContent = fmt(d-c);
+      cells[10].style.color = (d-c<0)?'var(--red)':'var(--green)';
     }
   }
   renderBudgetFooter();
@@ -1671,6 +1687,18 @@ function syncAllAccountSelects(type) {
 }
 
 // 예산계획서 테이블
+// 가결산(C) = 10/31까지 지출(가, amtC1) + 11/1~12/31 예상지출(나, amtC2)
+// 기존 데이터(amtC만 존재) 호환: amtC1/amtC2가 없으면 기존 amtC를 '가'로 이관
+function normalizeBudgetC(b) {
+  if (b.amtC1 === undefined && b.amtC2 === undefined) {
+    b.amtC1 = Number(b.amtC || 0);
+    b.amtC2 = 0;
+  }
+  b.amtC1 = Number(b.amtC1 || 0);
+  b.amtC2 = Number(b.amtC2 || 0);
+  b.amtC  = b.amtC1 + b.amtC2;   // 합계는 항상 재계산
+  return b;
+}
 function renderBudgetTable() {
   var s = curState();
   var rows = s.budgets||[];
@@ -1678,24 +1706,28 @@ function renderBudgetTable() {
   var tbodyExp = document.getElementById('budgetBodyExpense');
 
   if (!rows.length) {
-    tbodyInc.innerHTML='<tr class="empty-cell"><td colspan="10">항목을 추가하세요.</td></tr>';
+    tbodyInc.innerHTML='<tr class="empty-cell"><td colspan="12">항목을 추가하세요.</td></tr>';
     tbodyExp.innerHTML='';
     renderBudgetFooter();
     return;
   }
 
   function makeRow(b) {
+    normalizeBudgetC(b);
     var tag = b.type==='income'?'<span class="tag tin">수입</span>':'<span class="tag twarn">지출</span>';
+    var cSum = Number(b.amtC1||0)+Number(b.amtC2||0);
     return '<tr data-id="'+b.id+'">'
       +'<td class="ctr">'+tag+'</td>'
       +'<td><input type="text" value="'+esc(b.account||'')+'" onchange="setBF('+b.id+',\'account\',this.value)" placeholder="항/목(계정)"></td>'
       +'<td><input type="text" value="'+esc(b.item||'')+'" onchange="setBF('+b.id+',\'item\',this.value)" placeholder="적요"></td>'
       +'<td>'+amtInput(b.id,'amtA',b.amtA)+'</td>'
       +'<td>'+amtInput(b.id,'amtB',b.amtB)+'</td>'
-      +'<td>'+amtInput(b.id,'amtC',b.amtC)+'</td>'
+      +'<td>'+amtInput(b.id,'amtC1',b.amtC1)+'</td>'
+      +'<td>'+amtInput(b.id,'amtC2',b.amtC2)+'</td>'
+      +'<td class="num bcell-csum" style="font-weight:700;background:var(--paper2,#f7f7f7);color:var(--ink-mid,#333);">'+fmt(cSum)+'</td>'
       +'<td>'+amtInput(b.id,'amtD',b.amtD)+'</td>'
       +'<td class="num" style="color:'+(Number(b.amtD||0)-Number(b.amtB||0)<0?'var(--red)':'var(--green)')+';">'+fmt(Number(b.amtD||0)-Number(b.amtB||0))+'</td>'
-      +'<td class="num" style="color:'+(Number(b.amtD||0)-Number(b.amtC||0)<0?'var(--red)':'var(--green)')+';">'+fmt(Number(b.amtD||0)-Number(b.amtC||0))+'</td>'
+      +'<td class="num" style="color:'+(Number(b.amtD||0)-cSum<0?'var(--red)':'var(--green)')+';">'+fmt(Number(b.amtD||0)-cSum)+'</td>'
       +'<td class="ctr"><button onclick="delBudgetRow('+b.id+')" style="background:none;border:none;color:var(--red);cursor:pointer;"><i class="fa-solid fa-trash-can"></i></button></td>'
       +'</tr>';
   }
@@ -1703,8 +1735,8 @@ function renderBudgetTable() {
   var incRows = rows.filter(function(b){return b.type==='income';});
   var expRows = rows.filter(function(b){return b.type==='expense';});
 
-  tbodyInc.innerHTML = incRows.length ? incRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="10">수입 항목을 추가하세요.</td></tr>';
-  tbodyExp.innerHTML = expRows.length ? expRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="10">지출 항목을 추가하세요.</td></tr>';
+  tbodyInc.innerHTML = incRows.length ? incRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="12">수입 항목을 추가하세요.</td></tr>';
+  tbodyExp.innerHTML = expRows.length ? expRows.map(makeRow).join('') : '<tr class="empty-cell"><td colspan="12">지출 항목을 추가하세요.</td></tr>';
 
   renderBudgetFooter();
 }
@@ -1712,12 +1744,13 @@ function renderBudgetFooter() {
   var s = curState();
   var inc = (s.budgets||[]).filter(function(b){return b.type==='income';});
   var exp = (s.budgets||[]).filter(function(b){return b.type==='expense';});
+  (s.budgets||[]).forEach(normalizeBudgetC);
   function sum(arr,f){return arr.reduce(function(a,b){return a+Number(b[f]||0);},0);}
-  var cols=['A','B','C','D'];
+  var cols=['A','B','C1','C2','C','D'];
   ['inc','exp'].forEach(function(t){
     var arr = t==='inc'?inc:exp;
     cols.forEach(function(c){
-      var el = document.getElementById('ft'+t.charAt(0).toUpperCase()+t.slice(1)+c.toUpperCase());
+      var el = document.getElementById('ft'+t.charAt(0).toUpperCase()+t.slice(1)+c);
       if(el) el.textContent=fmt(sum(arr,'amt'+c));
     });
     var d=sum(arr,'amtD'),b=sum(arr,'amtB'),cc=sum(arr,'amtC');
@@ -1727,7 +1760,7 @@ function renderBudgetFooter() {
     if(dcEl) dcEl.textContent=fmt(d-cc);
   });
   // 잔액
-  ['A','B','C','D'].forEach(function(c){
+  ['A','B','C1','C2','C','D'].forEach(function(c){
     var iS=sum(inc,'amt'+c), eS=sum(exp,'amt'+c);
     var el=document.getElementById('ftRem'+c); if(el) el.textContent=fmt(iS-eS);
   });
@@ -2123,15 +2156,26 @@ function printBulkResolution() {
 function printBudgetPlan() {
   var s = curState();
   var ypp=currentYear-2, yp=currentYear-1, yc=currentYear;
+  (s.budgets||[]).forEach(normalizeBudgetC);
   var rows = (s.budgets||[]).map(function(b){
-    var d=Number(b.amtD||0),bb=Number(b.amtB||0),c=Number(b.amtC||0);
+    var d=Number(b.amtD||0),bb=Number(b.amtB||0);
+    var c1=Number(b.amtC1||0),c2=Number(b.amtC2||0),c=c1+c2;
     return '<tr><td class="pc">'+(b.type==='income'?'수입':'지출')+'</td><td>'+esc(b.account)+'</td><td>'+esc(b.item||'')+'</td><td></td>'
-      +'<td class="pr">'+fmt(b.amtA||0)+'</td><td class="pr">'+fmt(bb)+'</td><td class="pr">'+fmt(c)+'</td><td></td><td></td>'
+      +'<td class="pr">'+fmt(b.amtA||0)+'</td><td class="pr">'+fmt(bb)+'</td>'
+      +'<td class="pr">'+fmt(c1)+'</td><td class="pr">'+fmt(c2)+'</td><td class="pr" style="font-weight:bold;">'+fmt(c)+'</td>'
       +'<td class="pr" style="font-weight:bold;">'+fmt(d)+'</td><td class="pr">'+fmt(d-bb)+'</td><td class="pr">'+fmt(d-c)+'</td><td></td></tr>';
   }).join('');
   var inc=(s.budgets||[]).filter(function(b){return b.type==='income';});
   var exp=(s.budgets||[]).filter(function(b){return b.type==='expense';});
   function sum(arr,f){return arr.reduce(function(a,b){return a+Number(b[f]||0);},0);}
+  function footRow(label,arr){
+    return '<tr style="font-weight:bold;background:#e8e8e8;"><td colspan="4">'+label+'</td>'
+      +'<td class="pr">'+fmt(sum(arr,'amtA'))+'</td><td class="pr">'+fmt(sum(arr,'amtB'))+'</td>'
+      +'<td class="pr">'+fmt(sum(arr,'amtC1'))+'</td><td class="pr">'+fmt(sum(arr,'amtC2'))+'</td><td class="pr" style="font-weight:bold;">'+fmt(sum(arr,'amtC'))+'</td>'
+      +'<td class="pr">'+fmt(sum(arr,'amtD'))+'</td>'
+      +'<td class="pr">'+fmt(sum(arr,'amtD')-sum(arr,'amtB'))+'</td>'
+      +'<td class="pr">'+fmt(sum(arr,'amtD')-sum(arr,'amtC'))+'</td><td></td></tr>';
+  }
   doPrint('<div class="print-wrap">'
     +'<div class="print-title">'+yc+'년도 예산(안) 편성 및 사역(행사)계획서</div>'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
@@ -2141,26 +2185,16 @@ function printBudgetPlan() {
     +'<table class="ptbl">'
     +'<thead><tr>'
     +'<th rowspan="2">구분</th><th rowspan="2">항</th><th rowspan="2">목</th><th rowspan="2">적요</th>'
-    +'<th>'+ypp+'년<br>금액(A)</th>'
-    +'<th colspan="3">'+yp+'년도 가결산</th>'
-    +'<th rowspan="2"></th>'
-    +'<th>'+yc+'년도<br>예산(D)</th>'
-    +'<th>전년대비<br>(D-B)</th><th>금액대비<br>(D-C)</th><th rowspan="2">비고</th></tr>'
-    +'<tr><th></th><th>예산액(B)</th><th>가결산(C)</th><th>예상(나)</th><th>합계(가+나)</th><th></th></tr></thead>'
+    +'<th rowspan="2">'+ypp+'년<br>금액(A)</th>'
+    +'<th rowspan="2">'+yp+'년<br>예산액(B)</th>'
+    +'<th colspan="3">'+yp+'년도 가결산(C)</th>'
+    +'<th rowspan="2">'+yc+'년도<br>예산(D)</th>'
+    +'<th rowspan="2">전년대비<br>(D-B)</th><th rowspan="2">금액대비<br>(D-C)</th><th rowspan="2">비고</th></tr>'
+    +'<tr><th>10/31까지<br>지출(가)</th><th>11/1~12/31<br>예상지출(나)</th><th>합계(가+나)</th></tr></thead>'
     +'<tbody>'+rows+'</tbody>'
     +'<tfoot>'
-    +'<tr style="font-weight:bold;background:#e8e8e8;"><td colspan="4">수입 합계(1)</td>'
-    +'<td class="pr">'+fmt(sum(inc,'amtA'))+'</td><td class="pr">'+fmt(sum(inc,'amtB'))+'</td>'
-    +'<td class="pr">'+fmt(sum(inc,'amtC'))+'</td><td></td><td></td>'
-    +'<td class="pr">'+fmt(sum(inc,'amtD'))+'</td>'
-    +'<td class="pr">'+fmt(sum(inc,'amtD')-sum(inc,'amtB'))+'</td>'
-    +'<td class="pr">'+fmt(sum(inc,'amtD')-sum(inc,'amtC'))+'</td><td></td></tr>'
-    +'<tr style="font-weight:bold;background:#e8e8e8;"><td colspan="4">지출 합계(2)</td>'
-    +'<td class="pr">'+fmt(sum(exp,'amtA'))+'</td><td class="pr">'+fmt(sum(exp,'amtB'))+'</td>'
-    +'<td class="pr">'+fmt(sum(exp,'amtC'))+'</td><td></td><td></td>'
-    +'<td class="pr">'+fmt(sum(exp,'amtD'))+'</td>'
-    +'<td class="pr">'+fmt(sum(exp,'amtD')-sum(exp,'amtB'))+'</td>'
-    +'<td class="pr">'+fmt(sum(exp,'amtD')-sum(exp,'amtC'))+'</td><td></td></tr>'
+    + footRow('수입 합계(1)', inc)
+    + footRow('지출 합계(2)', exp)
     +'</tfoot></table>'
     +'<div class="note-list">'
     +'1. 비전센터 증축공사로 인한 비용발생으로 2025년 예산계획를 2024년대비 예산범위내에서 편성하시기 바랍니다.<br>'
