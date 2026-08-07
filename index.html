@@ -214,6 +214,7 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 .sign-placeholder{font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.8;pointer-events:none;}
 .note-list{font-size:8.5pt;color:#333;margin-top:10px;line-height:1.8;}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 </head>
 <body>
 
@@ -2391,12 +2392,7 @@ function printSettlement() {
     +'</div>', true, undefined, esc(cfg.dept)+'_수지결산보고서');  // 가로
 }
 
-function exportSettlementExcel() {
-  var tbl = document.getElementById('settlementTable');
-  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"><style>td,th{border:1px solid #000;}th{background:#e8e8e8;}</style></head>'
-    +'<body><h3>'+currentYear+'년도 수지결산보고서</h3>'+(tbl?tbl.outerHTML:'')+'</body></html>';
-  exportToExcel(html, esc(cfg.dept)+'_수지결산보고서.xls');
-}
+// (exportSettlementExcel 정의는 하단에 ExcelJS 기반으로 있음)
 
 // ═══════════════════════════════════════
 // 재정청구
@@ -2661,10 +2657,171 @@ function exportMonthlyExcel()    {
   var html='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"><style>td,th{border:1px solid #000;}</style></head><body><h3>'+currentYear+'년도 월별수지내역서</h3>'+(wrap?wrap.innerHTML:'')+'</body></html>';
   exportToExcel(html, esc(cfg.dept)+'_월별수지내역서.xls');
 }
-function exportSettlementExcel() {
-  var tbl=document.querySelector('#tab-settlement table');
-  var html='<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><meta charset="UTF-8"><style>td,th{border:1px solid #000;}</style></head><body><h3>'+currentYear+'년도 수지결산보고서</h3>'+(tbl?tbl.outerHTML:'')+'</body></html>';
-  exportToExcel(html, esc(cfg.dept)+'_수지결산보고서.xls');
+async function exportSettlementExcel() {
+  if (typeof ExcelJS === 'undefined') { alert('엑셀 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'); return; }
+  var s  = curState();
+  var sp = getState(currentYear-1);
+  var incBudgets = (s.budgets||[]).filter(function(b){return b.type==='income';});
+  var expBudgets = (s.budgets||[]).filter(function(b){return b.type==='expense';});
+
+  var wb = new ExcelJS.Workbook();
+  var ws = wb.addWorksheet(currentYear+'년도 수지결산', {views:[{showGridLines:false}]});
+  ws.columns = [
+    {width:8},{width:14},{width:10},{width:26},{width:13},
+    {width:13},{width:13},{width:13},{width:13},{width:10}
+  ];
+
+  var thin = {style:'thin', color:{argb:'FF000000'}};
+  var borderAll = {top:thin,left:thin,bottom:thin,right:thin};
+  var headFill  = {type:'pattern', pattern:'solid', fgColor:{argb:'FFE8EEF8'}};
+  var diffFill  = {type:'pattern', pattern:'solid', fgColor:{argb:'FFFEF9E6'}};
+  var totFill   = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF7F6F2'}};
+  var remFill   = {type:'pattern', pattern:'solid', fgColor:{argb:'FFF5ECC8'}};
+
+  // 제목
+  ws.mergeCells('A1:J1');
+  var titleCell = ws.getCell('A1');
+  titleCell.value = currentYear+'년도 수입, 지출 결산보고서';
+  titleCell.font = {bold:true, size:16, underline:true};
+  titleCell.alignment = {horizontal:'center'};
+  ws.getRow(1).height = 26;
+
+  // 소속·기준일 (좌측) / 결재란 (우측)
+  ws.mergeCells('A2:C3');
+  ws.getCell('A2').value = '소망교회 '+cfg.dept+' 팀(부)\n('+currentYear+'년 12월 31일)  (단위: 원)';
+  ws.getCell('A2').alignment = {wrapText:true, vertical:'top'};
+  ws.getCell('A2').font = {size:10};
+
+  var signLabels = ['회계총무','팀장','담당교역자','협력장로'];
+  var signCols = ['G','H','I','J'];
+  signLabels.forEach(function(lb, i){
+    var col = signCols[i];
+    var headCell = ws.getCell(col+'2');
+    headCell.value = lb;
+    headCell.font = {bold:true, size:9};
+    headCell.alignment = {horizontal:'center', vertical:'middle'};
+    headCell.fill = headFill;
+    headCell.border = borderAll;
+    var valCell = ws.getCell(col+'3');
+    valCell.value = cfg['sname'+(i+1)] || '';
+    valCell.font = {size:9};
+    valCell.alignment = {horizontal:'center', vertical:'middle'};
+    valCell.border = borderAll;
+  });
+  ws.getRow(2).height = 16;
+  ws.getRow(3).height = 20;
+
+  // 헤더 (2행)
+  var headerRow1 = ['구분','항','목','적요', currentYear+'년도\n금액(A)', currentYear+'년도', '', '증감', '', '비고'];
+  var r5 = ws.getRow(5);
+  r5.values = headerRow1;
+  ws.mergeCells('A5:A6'); ws.mergeCells('B5:B6'); ws.mergeCells('C5:C6'); ws.mergeCells('D5:D6');
+  ws.mergeCells('E5:E6'); ws.mergeCells('F5:G5'); ws.mergeCells('H5:I5'); ws.mergeCells('J5:J6');
+  ws.getCell('F6').value = '예산액(B)';
+  ws.getCell('G6').value = '금액(C)';
+  ws.getCell('H6').value = '전년대비\n(C-A)';
+  ws.getCell('I6').value = '예산대비\n(B-C)';
+  [5,6].forEach(function(rn){
+    ws.getRow(rn).eachCell({includeEmpty:true}, function(cell, colNumber){
+      if (colNumber < 1 || colNumber > 10) return;
+      cell.font = {bold:true, size:10};
+      cell.alignment = {horizontal:'center', vertical:'middle', wrapText:true};
+      cell.border = borderAll;
+      cell.fill = (colNumber===6||colNumber===7) ? headFill : (colNumber===8||colNumber===9) ? diffFill : undefined;
+    });
+  });
+  ws.getRow(5).height = 18; ws.getRow(6).height = 26;
+
+  var rIdx = 7;
+  var stIncA=0, stIncB=0, stIncC=0, stExpA=0, stExpB=0, stExpC=0;
+
+  function addRows(budgets, label, prevFn, curFn) {
+    var startRow = rIdx;
+    budgets.forEach(function(b) {
+      var a  = prevFn(b);
+      var bb = Number(b.amtD||0);
+      var c  = curFn(b);
+      if (label==='수입') { stIncA+=a; stIncB+=bb; stIncC+=c; }
+      else                { stExpA+=a; stExpB+=bb; stExpC+=c; }
+      var row = ws.getRow(rIdx);
+      row.values = ['', b.account, '', b.item||'', a, bb, c, c-a, bb-c, ''];
+      for (var col=1; col<=10; col++) {
+        var cell = row.getCell(col);
+        cell.border = borderAll;
+        if (col>=5) cell.numFmt = '#,##0';
+        if (col===8) cell.font = {color:{argb:(c-a<0)?'FFC0392B':'FF1A6B3C'}};
+        if (col===9) cell.font = {color:{argb:(bb-c<0)?'FFC0392B':'FF1A6B3C'}};
+      }
+      rIdx++;
+    });
+    if (budgets.length) {
+      ws.mergeCells('A'+startRow+':A'+(rIdx-1));
+      var divCell = ws.getCell('A'+startRow);
+      divCell.value = label;
+      divCell.font = {bold:true};
+      divCell.alignment = {horizontal:'center', vertical:'middle'};
+      divCell.border = borderAll;
+    }
+  }
+
+  addRows(incBudgets, '수입',
+    function(b){ return (sp.incomes||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); },
+    function(b){ return (s.incomes||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
+  );
+  addRows(expBudgets, '지출',
+    function(b){ return (sp.expenses||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); },
+    function(b){ return (s.expenses||[]).filter(function(r){return r.account===b.account;}).reduce(function(x,r){return x+Number(r.amount||0);},0); }
+  );
+
+  function footRow(label, a, b, c) {
+    var row = ws.getRow(rIdx);
+    row.values = ['', '', '', label, a, b, c, c-a, b-c, ''];
+    ws.mergeCells('A'+rIdx+':D'+rIdx);
+    for (var col=1; col<=10; col++) {
+      var cell = row.getCell(col);
+      cell.border = borderAll;
+      cell.font = {bold:true};
+      cell.fill = totFill;
+      if (col>=5) cell.numFmt = '#,##0';
+    }
+    rIdx++;
+  }
+  footRow('수입 합계(1)', stIncA, stIncB, stIncC);
+  footRow('지출 합계(2)', stExpA, stExpB, stExpC);
+
+  var remRow = ws.getRow(rIdx);
+  var remA=stIncA-stExpA, remB=stIncB-stExpB, remC=stIncC-stExpC;
+  remRow.values = ['', '', '', '잔액(1-2) — 다음년도 이월액', remA, remB, remC, remC-remA, remB-remC, ''];
+  ws.mergeCells('A'+rIdx+':D'+rIdx);
+  for (var col=1; col<=10; col++) {
+    var cell = remRow.getCell(col);
+    cell.border = borderAll;
+    cell.font = {bold:true};
+    cell.fill = remFill;
+    if (col>=5) cell.numFmt = '#,##0';
+  }
+  rIdx++;
+
+  // 주석
+  rIdx++;
+  var notes = [
+    '1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.',
+    '2. 실예산 배정액은 총예산에서 년말 재정팀으로 환입되지않은 전년도에서 이월된 잔액을 차감한후 배정됩니다.',
+    '3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.'
+  ];
+  notes.forEach(function(n){
+    ws.mergeCells('A'+rIdx+':J'+rIdx);
+    ws.getCell('A'+rIdx).value = n;
+    ws.getCell('A'+rIdx).font = {size:9, color:{argb:'FF555555'}};
+    rIdx++;
+  });
+
+  var buf = await wb.xlsx.writeBuffer();
+  var blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = cfg.dept+'_수지결산보고서.xlsx';
+  a.click();
 }
 
 // ═══════════════════════════════════════
