@@ -166,17 +166,9 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   #printArea .print-wrap + .print-wrap { page-break-before: always; }
   #printArea table { width: 100%; border-collapse: collapse; }
   #printArea th, #printArea td { border: 1px solid #000; padding: 3px 5px; word-break: keep-all; }
-  /* 결재란(서명표): 인쇄 시 폭 고정·축소 (약 40%). ID 선택자로 위 규칙보다 우선. */
+  /* 결재란(서명표) 크기는 signRow()에서 인라인으로 직접 계산되어 나옵니다. */
   #printArea table.sign-tbl { width: auto; table-layout: fixed; }
-  #printArea .sign-tbl td { padding: 2px 3px; }
-  #printArea .sign-tbl .sh { font-size: 9.75pt; background:#f0f0f0; font-weight:bold; white-space:nowrap; }
-  #printArea .sign-tbl .sb { width: 69px; height: 33px; }
-  #printArea .sign-tbl .sb img { max-width: 63px; max-height: 27px; object-fit: contain; }
-  /* 지출결의서 전용: 위 기본 크기의 200% (다른 서식엔 영향 없음) */
-  #printArea .sign-tbl.big td { padding: 4px 6px; }
-  #printArea .sign-tbl.big .sh { font-size: 19.5pt; }
-  #printArea .sign-tbl.big .sb { width: 138px; height: 66px; }
-  #printArea .sign-tbl.big .sb img { max-width: 126px; max-height: 54px; }
+  #printArea .sign-tbl td { border: 1px solid #000; }
 }
 #printArea{ display: none; }
 
@@ -2005,28 +1997,29 @@ function clearSign(n) {
   toast('서명 '+n+'번 삭제됨');
 }
 
-function signRow(labels, compact, big) {
-  var cls = 'sign-tbl' + (compact ? ' compact' : '') + (big ? ' big' : '');
-  var headMinW = compact ? '44px' : '70px';
-  var headFont = compact ? '6pt'  : '8pt';
-  var imgStyle = compact
-    ? 'max-width:40px;max-height:16px;object-fit:contain;display:block;margin:auto;'
-    : 'max-width:68px;max-height:30px;object-fit:contain;display:block;margin:auto;';
-  var nameFont = compact ? '6pt' : '8pt';
-  var cellPad  = compact ? '1px' : '3px';
-  var heads = labels.map(function(l){return '<td class="sh" style="min-width:'+headMinW+';letter-spacing:-.03em;white-space:nowrap;font-size:'+headFont+';">'+l+'</td>';}).join('');
+function signRow(labels, variant) {
+  var presets = {
+    'default':          { headFont:'8pt',   nameFont:'8pt',   cellW:70,  cellH:36, imgW:68,  imgH:30, pad:'3px' },
+    'compact':          { headFont:'6pt',   nameFont:'6pt',   cellW:44,  cellH:20, imgW:40,  imgH:16, pad:'1px' },
+    'resolution-xl':    { headFont:'15pt',  nameFont:'11pt',  cellW:138, cellH:66, imgW:120, imgH:52, pad:'4px' },
+    'settlement-tall':  { headFont:'8pt',   nameFont:'7pt',   cellW:57,  cellH:40, imgW:50,  imgH:34, pad:'2px' }
+  };
+  var p = presets[variant] || presets['default'];
+  var heads = labels.map(function(l){
+    return '<td class="sh" style="min-width:'+p.cellW+'px;letter-spacing:-.03em;white-space:nowrap;font-size:'+p.headFont+';">'+l+'</td>';
+  }).join('');
   var sigs  = labels.map(function(l,i){
     var b64  = [cfg.sign1,cfg.sign2,cfg.sign3,cfg.sign4][i]||'';
     var name = [cfg.sname1,cfg.sname2,cfg.sname3,cfg.sname4][i]||'';
     var imgHtml = b64
-      ? '<img src="'+b64+'" style="'+imgStyle+'">'
+      ? '<img src="'+b64+'" style="max-width:'+p.imgW+'px;max-height:'+p.imgH+'px;object-fit:contain;display:block;margin:auto;">'
       : '';
     var nameHtml = name
-      ? '<div style="font-size:'+nameFont+';text-align:center;margin-top:1px;font-weight:600;">'+esc(name)+'</div>'
+      ? '<div style="font-size:'+p.nameFont+';text-align:center;margin-top:1px;font-weight:600;">'+esc(name)+'</div>'
       : '';
-    return '<td class="sb" style="vertical-align:middle;padding:'+cellPad+';">'+imgHtml+nameHtml+'</td>';
+    return '<td class="sb" style="vertical-align:middle;padding:'+p.pad+';width:'+p.cellW+'px;height:'+p.cellH+'px;">'+imgHtml+nameHtml+'</td>';
   }).join('');
-  return '<table class="'+cls+'"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
+  return '<table class="sign-tbl"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
 }
 // 구글 드라이브 공유 URL → 직접 이미지 URL 변환
 function driveImgUrl(url) {
@@ -2116,7 +2109,7 @@ function buildResolutionHtml(e) {
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">'
     +'<div><div class="print-title">비 용 지 출 결 의 서</div>'
     +'<p style="font-size:10pt;">소망교회 ('+esc(cfg.dept)+') 팀(부)</p></div>'
-    +signRow(['회계담당','부 장'], true, true)+'</div>'
+    +signRow(['회계담당','부 장'], 'resolution-xl')+'</div>'
     +'<table class="ptbl" style="margin-bottom:12px;">'
     +'<tr><th style="width:80px;">일 자</th><td>'+esc(e.date)+'</td><th style="width:80px;">항</th><td style="font-weight:600;">'+esc(e.account)+'</td></tr>'
     +'<tr><th>목</th><td colspan="3">'+esc(e.item||e.account)+'</td></tr>'
@@ -2288,7 +2281,7 @@ function printSettlement() {
     +'<div class="print-title">'+currentYear+'년도 수입, 지출 결산보고서</div>'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
     +'<div><p style="font-size:10pt;">소망교회 '+esc(cfg.dept)+' 팀(부)<br>('+lastDay+')　（단위: 원）</p></div>'
-    +signRow(['회계총무','팀장','담당교역자','협력장로'], true)+'</div>'
+    +signRow(['회계총무','팀장','담당교역자','협력장로'], 'settlement-tall')+'</div>'
     +(tbl ? tbl.outerHTML : '')
     +'<div class="note-list">'
     +'1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.<br>'
