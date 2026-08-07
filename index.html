@@ -1496,7 +1496,31 @@ function delBudgetRow(id) {
   renderBudgetTable();
 }
 async function saveBudget() {
-  var res = await postToServer({action:'saveBudget', year:currentYear, budgets:curState().budgets}, '예산 저장 중...');
+  // 안전장치: 숫자칸은 포커스가 빠질 때(blur) 값이 반영되는데, 입력 직후 바로 저장 버튼을
+  // 누르면 그 반영이 아직 안 된 채로 저장될 수 있음. 저장 직전 화면의 실제 입력값을
+  // 강제로 다시 읽어서 state에 확실히 반영한다.
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  var s = curState();
+  document.querySelectorAll('#budgetBodyIncome tr[data-id], #budgetBodyExpense tr[data-id]').forEach(function(tr){
+    var id = Number(tr.dataset.id);
+    var row = s.budgets.find(function(b){ return b.id === id; });
+    if (!row) return;
+    tr.querySelectorAll('input.amt-input').forEach(function(inp){
+      var m = inp.getAttribute('onchange') && inp.getAttribute('onchange').match(/setBF\(\d+,'(\w+)'/);
+      var field = m ? m[1] : null;
+      if (!field) return;
+      var v = Number(String(inp.value).replace(/,/g,'')) || 0;
+      row[field] = v;
+    });
+    tr.querySelectorAll('input[type="text"]:not(.amt-input)').forEach(function(inp,i){
+      // 0번째=계정, 1번째=적요 (makeRow 순서 고정)
+      if (i === 0) row.account = inp.value;
+      if (i === 1) row.item = inp.value;
+    });
+    if (row.type === 'expense') row.amtC1 = Number(row.amtC1||0);
+    row.amtC = Number(row.amtC1||0) + Number(row.amtC2||0);
+  });
+  var res = await postToServer({action:'saveBudget', year:currentYear, budgets:s.budgets}, '예산 저장 중...');
   if (res) toast('✅ 예산계획서가 저장되었습니다.');
 }
 
