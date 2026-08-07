@@ -2001,7 +2001,7 @@ function signRow(labels, variant) {
   var presets = {
     'default':          { headFont:'8pt',   nameFont:'8pt',   cellW:70,  cellH:36, imgW:68,  imgH:30, pad:'3px' },
     'compact':          { headFont:'6pt',   nameFont:'6pt',   cellW:44,  cellH:20, imgW:40,  imgH:16, pad:'1px' },
-    'resolution-xl':    { headFont:'15pt',  nameFont:'11pt',  cellW:138, cellH:66, imgW:120, imgH:52, pad:'4px' },
+    'resolution-xl':    { headFont:'15pt',  nameFont:'8pt',   cellW:138, cellH:66, imgW:120, imgH:44, pad:'2px' },
     'settlement-tall':  { headFont:'8pt',   nameFont:'7pt',   cellW:57,  cellH:40, imgW:50,  imgH:34, pad:'2px' }
   };
   var p = presets[variant] || presets['default'];
@@ -2017,7 +2017,7 @@ function signRow(labels, variant) {
     var nameHtml = name
       ? '<div style="font-size:'+p.nameFont+';text-align:center;margin-top:1px;font-weight:600;">'+esc(name)+'</div>'
       : '';
-    return '<td class="sb" style="vertical-align:middle;padding:'+p.pad+';width:'+p.cellW+'px;height:'+p.cellH+'px;">'+imgHtml+nameHtml+'</td>';
+    return '<td class="sb" style="vertical-align:middle;padding:'+p.pad+';width:'+p.cellW+'px;height:'+p.cellH+'px;overflow:hidden;">'+imgHtml+nameHtml+'</td>';
   }).join('');
   return '<table class="sign-tbl"><tr>'+heads+'</tr><tr>'+sigs+'</tr></table>';
 }
@@ -2035,7 +2035,7 @@ function driveImgUrl(url) {
   return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1200';
 }
 
-function doPrint(html, landscape) {
+function doPrint(html, landscape, fitOnePage) {
   // 모바일(특히 저사양) 브라우저의 PDF 저장 기능은 화면에 안 보이는(display:none) 요소라도
   // 페이지 전체를 처리하다가 헤더의 대용량 로고 이미지(base64, 약 750KB) 때문에 타임아웃되어
   // 빈 페이지만 출력되는 경우가 있음. → 인쇄용 문서를 완전히 분리된 가벼운 iframe으로 만들어
@@ -2065,13 +2065,22 @@ function doPrint(html, landscape) {
   var fullHtml = '<!doctype html><html><head><meta charset="UTF-8"><style>'
     + printCss + '</style></head><body>' + html + '</body></html>';
 
+  // 1mm = 96/25.4px. 실제 인쇄 가능 영역(용지 - @page margin)에 맞춰 iframe 폭을 잡아야
+  // 스크롤 높이 측정이 실제 인쇄 결과와 일치한다.
+  var MM = 96 / 25.4;
+  var pageW = landscape ? Math.round(297 * MM) : Math.round(210 * MM); // 용지 전체 폭
+  // 용지 높이 - @page margin(양쪽) = print-wrap이 차지할 수 있는 최대 높이
+  var contentH = landscape ? Math.round((210 - 8 * 2) * MM) : Math.round((297 - 10 * 2) * MM);
+
   var frame = document.getElementById('_printFrame');
   if (!frame) {
     frame = document.createElement('iframe');
     frame.id = '_printFrame';
-    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    frame.style.cssText = 'position:fixed;left:-9999px;top:0;border:0;visibility:hidden;';
     document.body.appendChild(frame);
   }
+  frame.style.width  = pageW + 'px';
+  frame.style.height = (contentH + 200) + 'px'; // 측정 여유분
 
   function runPrint() {
     var fWin = frame.contentWindow;
@@ -2080,6 +2089,17 @@ function doPrint(html, landscape) {
     var delay = 200;
 
     function doActualPrint() {
+      if (fitOnePage) {
+        var wrap = fDoc.querySelector('.print-wrap');
+        if (wrap) {
+          var h = wrap.scrollHeight;
+          if (h > contentH) {
+            var scale = contentH / h;
+            wrap.style.transformOrigin = 'top left';
+            wrap.style.transform = 'scale(' + scale + ')';
+          }
+        }
+      }
       fWin.focus();
       fWin.print();
     }
@@ -2108,7 +2128,7 @@ function printResolution(id) {
   var s = curState();
   var e = (s.expenses||[]).find(function(r){return r.id===id;});
   if (!e) return;
-  doPrint(buildResolutionHtml(e), false);
+  doPrint(buildResolutionHtml(e), false, true);
 }
 
 // 결의서 HTML 생성 (단건 / 일괄 공용)
@@ -2292,7 +2312,7 @@ function printMonthly() {
     +'<p style="text-align:right;font-size:9pt;margin-bottom:8px;">소망교회 '+esc(cfg.dept)+' 팀(부)　（단위: 원）</p>'
     +inner
     +'<div class="note-list">주) 잔액은 통장잔액과 일치되어야 함</div>'
-    +'</div>', true);  // 가로
+    +'</div>', true, true);  // 가로 + 1페이지 강제
 }
 
 // 수지결산보고서 인쇄
@@ -2309,7 +2329,7 @@ function printSettlement() {
     +'1. 년간 예산범위내에서 5~10% 절감운용되어야하며 부득이 예산초과시에는 절차에 의한 추가예산배정을 받아야합니다.<br>'
     +'2. 실예산 배정액은 총예산에서 년말 재정팀으로 환입되지않은 전년도에서 이월된 잔액을 차감한후 배정됩니다.<br>'
     +'3. 비용집행에 따른 증빙처리(6하원칙)를 잘해주시기 바랍니다.</div>'
-    +'</div>', true);  // 가로
+    +'</div>', true, true);  // 가로 + 1페이지 강제
 }
 
 function exportSettlementExcel() {
