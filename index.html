@@ -2036,49 +2036,71 @@ function driveImgUrl(url) {
 }
 
 function doPrint(html, landscape) {
-  // 페이지 방향 동적 설정
-  var pageStyle = document.getElementById('_printPageStyle');
-  if (!pageStyle) {
-    pageStyle = document.createElement('style');
-    pageStyle.id = '_printPageStyle';
-    document.head.appendChild(pageStyle);
+  // 모바일(특히 저사양) 브라우저의 PDF 저장 기능은 화면에 안 보이는(display:none) 요소라도
+  // 페이지 전체를 처리하다가 헤더의 대용량 로고 이미지(base64, 약 750KB) 때문에 타임아웃되어
+  // 빈 페이지만 출력되는 경우가 있음. → 인쇄용 문서를 완전히 분리된 가벼운 iframe으로 만들어
+  // 앱 본체(로고 포함)를 아예 거치지 않고 인쇄한다.
+  var pageCss = landscape
+    ? '@page { size: A4 landscape; margin: 8mm; } table, th, td { font-size: 7.5pt; }'
+    : '@page { size: A4 portrait; margin: 10mm; } table, th, td { font-size: 8.5pt; }';
+
+  var printCss = ''
+    + ':root{--ink:#1a1a2e;--ink-mid:#3d3d5c;--ink-soft:#7b7b9a;--paper2:#eeecea;--rule:#d8d5cf;'
+    + '--gold:#b8860b;--gold-lt:#f5ecc8;--red:#c0392b;--green:#1a6b3c;--blue:#1a3a6b;--blue-lt:#e8eef8;}'
+    + '*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}'
+    + 'html,body{margin:0;padding:0;background:#fff;}'
+    + 'body{font-family:"Malgun Gothic","Noto Sans KR",sans-serif;color:#000;}'
+    + '.print-wrap{font-size:10pt;padding:14mm 12mm;}'
+    + '.print-wrap + .print-wrap{page-break-before:always;}'
+    + '.print-title{text-align:center;font-size:16pt;font-weight:bold;letter-spacing:.1em;text-decoration:underline;margin-bottom:10px;}'
+    + 'table{width:100%;border-collapse:collapse;}'
+    + 'th,td{border:1px solid #000;padding:3px 5px;word-break:keep-all;}'
+    + '.ptbl{font-size:10pt;} .ptbl .pr{text-align:right;} .ptbl .pc{text-align:center;}'
+    + '.note-list{font-size:8.5pt;color:#333;margin-top:10px;line-height:1.8;}'
+    + 'table.sign-tbl{width:auto;table-layout:fixed;border-collapse:collapse;}'
+    + '.sign-tbl td{border:1px solid #000;text-align:center;}'
+    + '.sign-tbl .sh{background:#f0f0f0;font-weight:bold;}'
+    + pageCss;
+
+  var fullHtml = '<!doctype html><html><head><meta charset="UTF-8"><style>'
+    + printCss + '</style></head><body>' + html + '</body></html>';
+
+  var frame = document.getElementById('_printFrame');
+  if (!frame) {
+    frame = document.createElement('iframe');
+    frame.id = '_printFrame';
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+    document.body.appendChild(frame);
   }
-  pageStyle.textContent = landscape
-    ? '@media print { @page { size: A4 landscape; margin: 8mm; } #printArea table, #printArea th, #printArea td { font-size: 7.5pt; } }'
-    : '@media print { @page { size: A4 portrait; margin: 10mm; } #printArea table, #printArea th, #printArea td { font-size: 8.5pt; } }';
 
-  var area = document.getElementById('printArea');
-  area.innerHTML = html;
-  area.style.display = 'block';
+  function runPrint() {
+    var fWin = frame.contentWindow;
+    var fDoc = frame.contentDocument;
+    var imgs = fDoc.querySelectorAll('img');
+    var delay = 200;
 
-  var imgs = area.querySelectorAll('img');
-  var delay = 200;
+    function doActualPrint() {
+      fWin.focus();
+      fWin.print();
+    }
 
-  function doActualPrint() {
-    window.print();
-    setTimeout(function() {
-      area.style.display = 'none';
-      area.innerHTML = '';
-    }, 600);
+    if (!imgs.length) { setTimeout(doActualPrint, delay); return; }
+
+    var total = imgs.length, loaded = 0, toastShown = false;
+    function onLoad() {
+      loaded++;
+      if (loaded >= total) setTimeout(doActualPrint, delay);
+    }
+    imgs.forEach(function(img) {
+      if (img.complete && img.naturalWidth > 0) { onLoad(); return; }
+      if (!toastShown) { toast('⏳ 영수증 이미지 로딩 중... 잠시만 기다려 주세요.', 3000); toastShown = true; }
+      img.onload  = onLoad;
+      img.onerror = onLoad;
+    });
   }
 
-  if (!imgs.length) {
-    setTimeout(doActualPrint, delay);
-    return;
-  }
-
-  var total = imgs.length, loaded = 0;
-  var toastShown = false;
-  function onLoad() {
-    loaded++;
-    if (loaded >= total) setTimeout(doActualPrint, delay);
-  }
-  imgs.forEach(function(img) {
-    if (img.complete && img.naturalWidth > 0) { onLoad(); return; }
-    if (!toastShown) { toast('⏳ 영수증 이미지 로딩 중... 잠시만 기다려 주세요.', 3000); toastShown = true; }
-    img.onload  = onLoad;
-    img.onerror = onLoad;
-  });
+  frame.onload = runPrint;
+  frame.srcdoc = fullHtml;
 }
 
 // 비용지출결의서
