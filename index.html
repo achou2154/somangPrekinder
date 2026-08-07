@@ -93,6 +93,18 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
 .tbl input[type=text],.tbl input[type=number]{border:none;background:transparent;border-bottom:1px solid transparent;padding:2px 4px;font-size:13px;font-family:'Noto Sans KR',sans-serif;width:100%;outline:none;color:var(--ink);}
 .tbl input:focus{border-bottom-color:var(--blue);background:var(--blue-lt);}
 .tbl input[type=number]{text-align:right;}
+/* 예산계획서: 세로 셀선 (A/B/C/D/D-C 뒤에만) + D(당해예산)열 강조 배경 */
+#budgetTable th:nth-child(4),  #budgetTable td:nth-child(4),   /* A 뒤 */
+#budgetTable th:nth-child(5),  #budgetTable td:nth-child(5),   /* B 뒤 */
+#budgetTable th:nth-child(8),  #budgetTable td:nth-child(8),   /* C(합계) 뒤 */
+#budgetTable th:nth-child(9),  #budgetTable td:nth-child(9),   /* D 뒤 */
+#budgetTable th:nth-child(11), #budgetTable td:nth-child(11) { /* D-C 뒤 */
+  border-right: 1px solid var(--rule);
+}
+#budgetTable th:nth-child(9), #budgetTable td:nth-child(9) {
+  background: #fdf6d8;
+}
+#budgetTable tbody tr:hover td:nth-child(9) { background: #fbefc0; }
 .empty-cell td{text-align:center;padding:24px;color:var(--ink-soft);font-size:13px;}
 
 /* ── SUMMARY BOXES ── */
