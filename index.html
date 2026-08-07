@@ -154,6 +154,8 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   body *{ visibility: hidden; }
   #printArea, #printArea *{ visibility: visible; }
+  /* body의 나머지 요소는 레이아웃에서 완전히 제거 (visibility만으로는 공간을 차지해 빈 페이지가 생김) */
+  body > *:not(#printArea) { display: none !important; }
   #printArea{
     position: absolute;
     left: 0; top: 0;
@@ -170,6 +172,11 @@ main{max-width:1200px;margin:0 auto;padding:20px 16px 60px;}
   #printArea .sign-tbl .sh { font-size: 9.75pt; background:#f0f0f0; font-weight:bold; white-space:nowrap; }
   #printArea .sign-tbl .sb { width: 69px; height: 33px; }
   #printArea .sign-tbl .sb img { max-width: 63px; max-height: 27px; object-fit: contain; }
+  /* 지출결의서 전용: 위 기본 크기의 200% (다른 서식엔 영향 없음) */
+  #printArea .sign-tbl.big td { padding: 4px 6px; }
+  #printArea .sign-tbl.big .sh { font-size: 19.5pt; }
+  #printArea .sign-tbl.big .sb { width: 138px; height: 66px; }
+  #printArea .sign-tbl.big .sb img { max-width: 126px; max-height: 54px; }
 }
 #printArea{ display: none; }
 
@@ -1998,8 +2005,8 @@ function clearSign(n) {
   toast('서명 '+n+'번 삭제됨');
 }
 
-function signRow(labels, compact) {
-  var cls      = 'sign-tbl' + (compact ? ' compact' : '');
+function signRow(labels, compact, big) {
+  var cls = 'sign-tbl' + (compact ? ' compact' : '') + (big ? ' big' : '');
   var headMinW = compact ? '44px' : '70px';
   var headFont = compact ? '6pt'  : '8pt';
   var imgStyle = compact
@@ -2109,7 +2116,7 @@ function buildResolutionHtml(e) {
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">'
     +'<div><div class="print-title">비 용 지 출 결 의 서</div>'
     +'<p style="font-size:10pt;">소망교회 ('+esc(cfg.dept)+') 팀(부)</p></div>'
-    +signRow(['회계담당','부 장'], true)+'</div>'
+    +signRow(['회계담당','부 장'], true, true)+'</div>'
     +'<table class="ptbl" style="margin-bottom:12px;">'
     +'<tr><th style="width:80px;">일 자</th><td>'+esc(e.date)+'</td><th style="width:80px;">항</th><td style="font-weight:600;">'+esc(e.account)+'</td></tr>'
     +'<tr><th>목</th><td colspan="3">'+esc(e.item||e.account)+'</td></tr>'
